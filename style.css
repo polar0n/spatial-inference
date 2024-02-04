@@ -1,4 +1,126 @@
 html, body {
     margin: 0;
     overflow: hidden;
+    background-color: black;
+}
+
+body > * {
+    color: white;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+
+.overlay {
+    position: fixed; /* Sit on top of the page content */
+    display: none; /* Hidden by default */
+    width: 100vw; /* Full width (cover the whole page) */
+    height: 100vh; /* Full height (cover the whole page) */
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0,0,0,0.8); /* Black background with opacity */
+    z-index: 2; /* Specify a stack order in case you're using a different order for other elements */
+}
+
+#score {
+    padding: 10px;
+    background-color: black;
+    font-size: 26px;
+    position: fixed;
+    z-index: 1;
+    display: flex;
+    justify-content: right;
+    border-radius: 10%;
+}
+
+.flex {
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+}
+
+.horizontal {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+}
+
+#time {
+    font-size: 90px;
+    margin-bottom: 4vh;
+    margin-top: 4vh;
+    height: 20vh;
+}
+
+#text {
+    font-size: 20px;
+}
+
+#info {
+    font-size: 18px;
+}
+
+.button {
+    margin: 10px;
+    color: white;
+    padding: 10px 10px 10px 10px;
+    border-radius: 5px;
+}
+
+.button:hover {
+    cursor: pointer;
+}
+
+#agree {
+    background-color: green;
+    transition: background-color 1s, color 0.3s;
+}
+
+#agree:hover {
+    background-color: chartreuse;
+    color: black;
+}
+
+#disagree {
+    background-color: brown;
+    transition: background-color 1s, color 0.3s;
+}
+
+#disagree:hover {
+    background-color: red;
+    color: black;
+}
+
+#submit {
+    background-color: darkblue;
+    transition: background-color 1s, color 0.3s;
+}
+
+#submit:hover {
+    background-color: cornflowerblue;
+    color: black;
+}
+
+#agreement {
+    display: block;
+    background-color: black;
+}
+
+.textbox {
+    height: 68vh;
+    width: 70%;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    margin-bottom: 4%;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.5) rgba(0, 0, 0, 0.1);
+}
+
+.title {
+    font-size: 30px;
+    margin: 20px 20px 20px 20px;
+}
+
+.result {
+    font-style: italic;
 }

@@ -1,11 +1,52 @@
 import * as THREE from 'three';
 import {PointerLockControls} from 'three/addons/controls/PointerLockControls.js';
 
+let canvas = document.getElementById('three');;
+let overlay_start;
+let overlay_reading;
+let overlay_end;
+let timer_text;
+let score_text;
+let form_id;
+
+let inference_time = -1; // Time taken to make an inference
+let inference_made; // Whether an inference was made
+let age;
+let sex;
+let mistakes = 0;
+
+window.onload = () => {
+    overlay_start = document.getElementById('agreement');
+    document.getElementById('agree').onclick = () => {
+        document.getElementById('info').style.display = 'none';
+        document.getElementById('disagree').style.display = 'none';
+        document.getElementById('agree').style.display = 'none';
+        document.getElementById('questionnaire').style.display = 'block';
+        document.getElementById('submit').style.display = 'block'
+    };
+    document.getElementById('submit').onclick = () => {
+        age = document.getElementById('age').value;
+        sex = document.getElementById('sex').value;
+        overlay_start.style.display = 'none';
+        add_pointer_control();
+        controls_enabled = true;
+        animate();
+    };
+    document.getElementById('disagree').onclick = () => { window.close() };
+    overlay_reading = document.getElementById('reading');
+    overlay_end = document.getElementById('endmsg');
+    timer_text = document.getElementById('time');
+    score_text = document.getElementById('score');
+    form_id = document.getElementById('form_id').innerText;
+};
+
+let time = 5; // 600
+let controls_enabled = false;
 // PSA 10.941600000023842
 // NSA 16.75689999997616
 let state = 0;
 let phase = 1; // 0
-let group = 2;
+let group = Math.floor(Math.random() * 3);
 const COLOR_DISCS2 = [0x0394fc, 0xa600f0];
 const COLOR_MAP2 = {0: -1, 1: 1};
 
@@ -15,7 +56,7 @@ const COLOR_MAP4 = {0: -1, 1: -1, 2: 1, 3: 1};
 const COLOR_DISCS_ANTECEDENTS = [0x00ff00, 0xff0000];
 
 const GOAL_SUCCESS2 = 8;
-const GOAL_SUCCESS4 = 32;
+const GOAL_SUCCESS4 = 8; // 32
 const GOAL_SUCCESS42 = 8;
 let successes = 7; // 0
 let chosen_direction = 0; // -1 for left, 1 for right, and 0 for undefined
@@ -30,11 +71,14 @@ const direction = new THREE.Vector3;
 let cam_pos = new THREE.Vector3;
 const J_UNIT = new THREE.Vector3(0, 1, 0);
 const LIGHTS = {
-    traffic1: new THREE.Color(0x0000ff),
-    traffic2: new THREE.Color(0xff00ff)
+    blue: new THREE.Color(0x0000ff),
+    magenta: new THREE.Color(0xff00ff)
 }
 
-const renderer = new THREE.WebGLRenderer();
+const renderer = new THREE.WebGLRenderer({
+    canvas: canvas,
+    antialias: true
+});
 renderer.setSize(w, h);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
@@ -58,19 +102,16 @@ const camera = new THREE.PerspectiveCamera(55, w/h, .1, 1000);
 camera.position.set(START.x, START.y, START.z);
 camera.lookAt(0, player.height, 0);
 
-const pointercontrol = new PointerLockControls(camera, document.body);
-
-pointercontrol.addEventListener('lock', function() {
-    console.log('locked');
-});
-pointercontrol.addEventListener('unlock', function() {
-    console.log('unlocked')
-});
+// --- Pointer Control ---
+let pointercontrol;
+function add_pointer_control() {
+    pointercontrol = new PointerLockControls(camera, document.body);
+}
+// --- Pointer Control END ---
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x000000);
 // Phase 3 background
-// scene.background = new THREE.Color().setHSL( 0.6, 1, 0.6 );
 scene.fog = new THREE.Fog(scene.background, 100, 300);
 
 window.addEventListener('resize', () => {
@@ -89,8 +130,6 @@ let plane_material1 = new THREE.MeshPhongMaterial(0xffffff);
 let plane1 = new THREE.Mesh(plane_geometry1, plane_material1);
 
 plane1.rotation.x -= Math.PI / 2;
-// plane1.scale.x = 3;
-// plane1.scale.y = 3;
 plane1.receiveShadow = true;
 first_phase_meshes.push(plane1);
 
@@ -185,17 +224,18 @@ box.castShadow = true;
 traffic_meshes.push(box);
 
 const traffic_light_geometry1 = new THREE.SphereGeometry(1.4, 32, 16);
-const traffic_light_material1 = new THREE.MeshPhongMaterial({color: LIGHTS.traffic1});
+const traffic_light_material1 = new THREE.MeshPhongMaterial({color: LIGHTS.blue});
 const traffic_light1 = new THREE.Mesh(traffic_light_geometry1, traffic_light_material1);
 traffic_light1.position.y = POLE_HEIGHT + 0.8;
 traffic_light1.position.z = 10 - 3/2 + 0.5;
 traffic_meshes.push(traffic_light1);
 
 const traffic_light_geometry2 = new THREE.SphereGeometry(1.4, 32, 16);
-const traffic_light_material2 = new THREE.MeshPhongMaterial({color: LIGHTS.traffic2});
+const traffic_light_material2 = new THREE.MeshPhongMaterial({color: LIGHTS.magenta});
 const traffic_light2 = new THREE.Mesh(traffic_light_geometry2, traffic_light_material2);
 traffic_light2.position.y = POLE_HEIGHT + 3.6;
 traffic_light2.position.z = 10 - 3/2 + 0.5;
+// traffic_light2.matrixAutoUpdate = false;
 traffic_meshes.push(traffic_light2);
 
 
@@ -206,7 +246,7 @@ const grass_material = new THREE.MeshStandardMaterial({
 });
 
 const textureloader = new THREE.TextureLoader();
-textureloader.load('wildgrass.png', function (map) {
+textureloader.load('assets/wildgrass.png', function (map) {
     map.wrapS = THREE.RepeatWrapping;
     map.wrapT = THREE.RepeatWrapping;
     map.anisotropy = 4;
@@ -236,7 +276,7 @@ const center_asphalt_material = new THREE.MeshStandardMaterial({
     bumpScale: 1
 });
 
-textureloader.load('asphalt.jpg', function (map) {
+textureloader.load('assets/asphalt.jpg', function (map) {
     map.wrapS = THREE.RepeatWrapping;
     map.wrapT = THREE.RepeatWrapping;
     map.anisotropy = 4;
@@ -246,7 +286,7 @@ textureloader.load('asphalt.jpg', function (map) {
     asphalt_material.needsUpdate = true;
 });
 
-textureloader.load('asphalt.jpg', function (map) {
+textureloader.load('assets/asphalt.jpg', function (map) {
     map.wrapS = THREE.RepeatWrapping;
     map.wrapT = THREE.RepeatWrapping;
     map.anisotropy = 4;
@@ -256,7 +296,7 @@ textureloader.load('asphalt.jpg', function (map) {
     center_asphalt_material.needsUpdate = true;
 });
 
-textureloader.load('asphalt_normal.jpg', function (map) {
+textureloader.load('assets/asphalt_normal.jpg', function (map) {
     map.wrapS = THREE.RepeatWrapping;
     map.wrapT = THREE.RepeatWrapping;
     map.anisotropy = 4;
@@ -327,6 +367,7 @@ dirLight.shadow.bias = - 0.0001;
 
 
 function initiate_phase3() {
+    // After the participants read everything the overlay will disappear and a new setting will be created
     first_phase_meshes.forEach((mesh) => {scene.remove(mesh)});
     last_phase_meshes.forEach((mesh) => {scene.add(mesh)});
     scene.background = new THREE.Color().setHSL( 0.6, 1, 0.6 );
@@ -341,7 +382,7 @@ function initiate_phase3() {
 }
 
 
-document.addEventListener('keydown', ({keyCode}) => {controls[keyCode] = true});
+document.addEventListener('keydown', ({keyCode}) => {controls[keyCode] = true & controls_enabled});
 document.addEventListener('keyup', ({keyCode}) => {controls[keyCode] = false});
 document.addEventListener('click', (event) => {
     if (event.button == 0) {
@@ -352,13 +393,11 @@ document.addEventListener('click', (event) => {
             pointercontrol.lock();
             locked = true;
         };
-    } else if (event.button == 2) {
-        // traffic_light1.material = new THREE.MeshBasicMaterial({color: LIGHTS.traffic1});
-        traffic_light2.material = new THREE.MeshBasicMaterial({color: LIGHTS.traffic2});
     };
 });
 
 function bounding(v) {
+    // Do not allow the user get out of the bounds of the maze
     if (chosen_direction == 0) {
         if (v.z > 9.0 || v.z < -99.0) {
             return false;
@@ -388,6 +427,7 @@ function bounding(v) {
 };
 
 function control() {
+    // Control user movement in the maze based on the pressed button
     camera.getWorldDirection(direction);
     cam_pos = camera.position.clone();
     // console.log(cam_pos);
@@ -425,23 +465,23 @@ function show_color_disc() {
         rotate_disc();
         setTimeout(() => {
             rotate_disc();
-        }, 2000);
+        }, 1300);
     } else if (group == 1) {
         if (phase == 0) {
             color_disc.material.color.set(COLOR_DISCS4[current_color]);
             rotate_disc();
             setTimeout(() => {
                 color_disc.material.color.set(COLOR_DISCS_ANTECEDENTS[current_antecedent_color]);
-            }, 2000);
+            }, 1300);
             setTimeout(() => {
                 rotate_disc();
-            }, 4000);
+            }, 2600);
         } else if (phase == 1) {
             color_disc.material.color.set(COLOR_DISCS4[current_color]);
             rotate_disc();
             setTimeout(() => {
                 rotate_disc();
-            }, 2000);
+            }, 1300);
         };
         
     } else if (group == 2) {
@@ -449,7 +489,7 @@ function show_color_disc() {
         rotate_disc();
         setTimeout(() => {
             rotate_disc();
-        }, 2000);
+        }, 1300);
     };
 };
 
@@ -458,12 +498,33 @@ function show_traffic_light() {
     camera.lookAt(0, 6 / 3 + POLE_HEIGHT, 10);
     setTimeout(() => {
         if (group == 0) {
-            traffic_light2.material = new THREE.MeshBasicMaterial({color: COLOR_DISCS2[1]});
+            setTimeout(() => { traffic_blinking(COLOR_DISCS2[0]) }, 0);
+            traffic_light2.material = new THREE.MeshBasicMaterial({color: COLOR_DISCS2[0]});
+            traffic_light2.updateMatrix();
         } else {
+            setTimeout(() => { traffic_blinking(COLOR_DISCS4[3]) }, 0)
             traffic_light2.material = new THREE.MeshBasicMaterial({color: COLOR_DISCS4[3]});
+            traffic_light2.updateMatrix();
         };
+        // Measure the time of inference
         clock.start();
-    }, 100);
+    }, 300);
+};
+
+function traffic_blinking(color) {
+    let blinks = 0;
+    let materials = [traffic_light_material2, new THREE.MeshBasicMaterial({color: color})];
+
+    function change_material() {
+        traffic_light2.material = materials[blinks % 2];
+        traffic_light2.updateMatrix();
+        blinks += 1;
+        if (blinks < 4) {
+            setTimeout(change_material, 700);
+        };
+    };
+
+    setTimeout(change_material, 700);
 };
 
 function ixMovementUpdate() {
@@ -497,34 +558,38 @@ function await_user_direction() {
 }
 
 function await_finish() {
-    if (chosen_direction == -1 && camera.position.x > 80.0) {
+    // Await the user to get to the end of the arm
+    // If the user is near the end of any of the choice arms
+    if (camera.position.x > 80.0 || camera.position.x < -80.0) {
+        // If the user is in the the last, test, phase
         if (phase == 2) {
             clock.stop();
-            console.log(clock.elapsedTime);
-            phase = 0;
+            inference_time = clock.elapsedTime.toFixed(3);
+            document.getElementById('inftime').innerText = inference_time;
+            phase = -1;
+            if (group == 0) {
+                inference_made = camera.position.x < -80.0;
+            } else {
+                inference_made = camera.position.x > 80.0;
+            };
+            document.getElementById('inf').innerText = (inference_made) ? 'Yes' : 'No';
+            setTimeout(ending_overlay_on, 0);
         } else {
-            restart_training();
-        };
-    } else if (camera.position.x < -80.0) {
-        if (phase == 2) {
-            clock.stop();
-            console.log(clock.elapsedTime);
-            phase = 0;
-        } else {
+            // Put the user at the start arm
             restart_training();
         };
     };
 };
 
 function restart_training() {
+    // Put the user at the start arm
+    // Close the choice arm walls
     if (chosen_direction == -1) {
         left_arm_choice_wall.rotation.y += Math.PI;
     } else {
         right_arm_choice_wall.rotation.y += Math.PI;
     };
-    setTimeout(() => {
-        console.log();
-    }, 1000);
+    // Evaluate and update the training colors and success
     if (group == 0) {
         if (COLOR_MAP2[current_color] == phase_direction_modifier * chosen_direction) {
             successes += 1;
@@ -532,6 +597,7 @@ function restart_training() {
             current_color %= 2;
         } else {
             successes = 0;
+            mistakes += 1;
         };
         if (successes == GOAL_SUCCESS2) {
             if (phase == 0) {
@@ -540,22 +606,21 @@ function restart_training() {
                 successes = 0;
             } else if (phase == 1) {
                 phase = 2;
-                setTimeout(initiate_phase3, 1);
+                setTimeout(reading_overlay_on, 0);
             };
         };
     } else if (group == 1) {
         if (phase == 0) {
             if (COLOR_MAP4[current_color] == chosen_direction) {
-                console.log('correct', successes);
                 successes += 1;
                 current_color += 1;
                 current_color %= 4;
                 current_antecedent_color = Math.floor(current_color / 2);
             } else {
                 successes = 0;
+                mistakes += 1;
             };
             if (successes == GOAL_SUCCESS4) {
-                console.log('next phase');
                 phase = 1;
                 phase_direction_modifier = -1;
                 successes = 0;
@@ -564,17 +629,17 @@ function restart_training() {
             };
         } else if (phase == 1) {
             if (COLOR_MAP4[current_color] == phase_direction_modifier * chosen_direction) {
-                console.log('correct', successes);
                 successes += 1;
                 current_color += 2;
                 current_color %= 4;
             } else {
                 successes = 0;
+                mistakes += 1;
             };
             if (successes == GOAL_SUCCESS42) {
                 console.log('next phase');
                 phase = 2;
-                setTimeout(initiate_phase3, 1);
+                setTimeout(reading_overlay_on, 0);
             };
         };
     } else if (group == 2) {
@@ -586,6 +651,7 @@ function restart_training() {
                 current_color %= 4;
             } else {
                 successes = 0;
+                mistakes += 1;
             };
             if (successes == GOAL_SUCCESS4) {
                 console.log('next phase');
@@ -602,11 +668,12 @@ function restart_training() {
                 current_color %= 4;
             } else {
                 successes = 0;
+                mistakes += 1;
             };
             if (successes == GOAL_SUCCESS42) {
                 console.log('next phase');
                 phase = 2;
-                setTimeout(initiate_phase3, 1);
+                setTimeout(reading_overlay_on, 0);
             };
         };
     };
@@ -614,6 +681,7 @@ function restart_training() {
     chosen_direction = 0;
     camera.position.set(START.x, START.y, START.z);
     camera.lookAt(0, player.height, 0);
+    update_score();
 };
 
 function animate() {
@@ -626,8 +694,80 @@ function animate() {
     };
     if (state == 2) {
         await_finish();
-    }
+    };
     ixMovementUpdate();
     renderer.render(scene, camera);
 };
-animate();
+
+// --- Overlay functions ---
+function reading_overlay_on() {
+    pointercontrol.unlock();
+    pointercontrol.disconnect();
+    overlay_reading.style.display = 'block';
+    controls_enabled = false;
+    setTimeout(timer_second, 1000);
+};
+
+function reading_overlay_off() {
+    pointercontrol.connect();
+    pointercontrol.lock();
+    overlay_reading.style.display = 'none';
+    controls_enabled = true;
+    setTimeout(initiate_phase3, 0);
+};
+
+function ending_overlay_on() {
+    overlay_end.style.display = 'block';
+    pointercontrol.unlock();
+    pointercontrol.disconnect();
+    controls_enabled = false;
+    setTimeout(send_data, 0);
+}
+// --- Overlay functions END ---
+
+// --- Timer ---
+function timer_second() {
+    time -= 1;
+    if (time <= 0) {
+        setTimeout(reading_overlay_off, 0);
+        return;
+    };
+    let seconds = time % 60;
+    if (seconds < 10) {
+        seconds = `0${seconds}`;
+    };
+    let minutes = Math.floor(time / 60);
+    if (minutes < 10) {
+        minutes = `0${minutes}`;
+    };
+    timer_text.innerText = `${minutes}:${seconds}`;
+    setTimeout(timer_second, 1000);
+};
+// --- Timer END ---
+
+function update_score() {
+    score_text.innerText = successes;
+};
+
+async function send_data() {
+    const rawResponse = await fetch('/api', {
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            form_id: form_id,
+            data: {
+                age: Number(age),
+                sex: Number(sex),
+                inference: Number(inference_made),
+                inferencet: Number(inference_time),
+                mistakes: mistakes
+            }
+        })
+    });
+    const content = await rawResponse.json();
+
+    console.log(content);
+};

@@ -3,12 +3,7 @@
 	<head>
 		<meta charset="utf-8">
 		<title>Figuring stuff out</title>
-		<style>
-			html, body {
-                margin: 0;
-                overflow: hidden;
-            }
-		</style>
+		<link rel="stylesheet" href="/style.css">
 	</head>
 	<body>
 		<script type="x-shader/x-vertex" id="vertexShader">
@@ -34,5 +29,82 @@
 			}
 		</script>
 		<script type="module" src="/main.js"></script>
+		<canvas id="three"></canvas>
+		<div id="score">0</div>
+		<div class="overlay" id="agreement">
+			<div class="flex">
+				<div class="horizontal">
+					<div class="title">
+						Spatial Inference
+					</div>
+				</div>
+				<div class="horizontal">
+					<div class="textbox" id="info"><div id="formid" style="display: none">{{ formid }}</div>
+						Dear participant,</br></br></br>
+						Please consider participating in the study about bilingualism and cognition. Participation in this study is completely voluntary. You are under no obligation to participate in this study and, if you decide to participate, you may stop at any time. There will be no consequences for deciding not to participate or for deciding to stop participating in the study. </br></br>
+						If you decide to participate, you will be asked to fill out the Google form that includes demographic questions and two tests which takes from 10 to 15 minutes to complete. The information you provide during your participation in this study will remain confidential. The results of the study will only be reported in aggregate form and no identifying information will be released. To further safeguard your confidentiality, please do not write your name or any identifying information on the study instruments. The information you provide during the course of this study will not be used for any purpose outside the scope of this research project. All data will be destroyed by 5 May, 2023. </br></br>
+						Participation in this study involves minimal risk. You will be asked to share your age and country of origin. However, no other identifying information will be requested. The nature of this study does not lead you to share any sensitive information. </br></br>
+						There is no cost to participate in this project. </br></br>
+						The study is being conducted by Igor Papuc as a part of fourth-year thesis process at LCC International University. If you have any questions or concerns regarding the study, please contact Igor Papuc, at ipapuc20@students.lcc.lt or Dr. Jennifer Schneider, jschneider@lcc.lt. </br></br></br>
+						Thank you for your time!
+					</div>
+					<div id="questionnaire" style="display: none">
+						<div>What is your age: </div><input id="age"></br>
+						<div>What is your biological sex: </div><select name="sex" id="sex">
+							<option value="0">Female</option>
+							<option value="1">Male</option>
+						</select>
+					</div>
+				</div>
+				<div class="horizontal">
+					<div class="button" id="agree">I consent</div>
+					<div class="button" id="disagree">Do not consent</div>
+					<div class="button invalid" id="submit" style="display: none">Continue</div>
+				</div>
+			</div>
+		</div>
+		<div class="overlay" id="reading">
+			<div class="flex">
+				<div class="horizontal">
+					<div id="time">10:00</div>
+				</div>
+				<div class="horizontal">
+					<div class="textbox" id="text">
+						Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent et ultricies ligula, eget tincidunt quam. Duis aliquet, justo sit amet sagittis consequat, tellus elit gravida odio, nec lobortis purus mauris et justo. Etiam pretium mi turpis, vitae ullamcorper lacus finibus id. Vivamus vitae risus posuere, aliquet ante eu, aliquet ipsum. Phasellus sagittis semper turpis, ac efficitur turpis. Donec interdum dui sodales felis efficitur, ac maximus leo eleifend. Donec hendrerit dictum facilisis. Quisque suscipit dolor arcu. Nulla est sapien, viverra vel neque eget, placerat venenatis lacus.</br></br>
+						Maecenas et quam non dui elementum cursus. Fusce feugiat eleifend metus, a rhoncus neque efficitur vel. Ut lobortis nulla sem, nec ultricies dui ornare non. Cras porta posuere dolor, non pretium quam pretium non. Mauris risus ante, faucibus pretium eros eget, porttitor tempor neque. Etiam semper massa ac enim iaculis vulputate. Donec id ligula quam. Pellentesque et mauris ac massa faucibus ultricies vitae sit amet mauris. Nam vitae erat sit amet mi ullamcorper tempor. Nulla facilisi. Sed volutpat orci nec placerat vulputate. Sed rhoncus dui eu ipsum pharetra, vitae faucibus nisi hendrerit. Etiam non hendrerit dolor, egestas tristique velit. Curabitur tempor quam sit amet velit feugiat venenatis.</br></br>
+						Proin dapibus, purus in sollicitudin auctor, ipsum lacus rhoncus nibh, ac fermentum justo eros a lorem. Mauris a dapibus nunc. Suspendisse potenti. Praesent euismod placerat nisi, in auctor nibh ultrices ac. Curabitur quis velit sodales, hendrerit tortor ac, venenatis elit. Sed a posuere mauris, in maximus neque. In a turpis eget nisl consectetur iaculis. Pellentesque rhoncus tellus tempor, sollicitudin enim id, feugiat ipsum. Vivamus aliquam id felis eget hendrerit. Aliquam maximus elit sed ipsum scelerisque, id condimentum dolor vehicula. Curabitur tempor, ante id semper dictum, massa orci commodo sapien, sed laoreet risus neque et arcu. Vivamus vel ante id lectus blandit suscipit. Integer felis libero, blandit vitae leo eu, dapibus vehicula nisi. Sed quis eros vitae eros dapibus tincidunt eget id nibh. Sed at odio nunc.</br></br>
+						Aenean suscipit massa a varius sollicitudin. Cras et libero in orci egestas imperdiet feugiat vitae orci. Donec blandit metus massa, id sollicitudin nisi facilisis eget. Integer maximus bibendum mi. Phasellus eu ultrices quam. Cras odio erat, volutpat eget purus ut, aliquet vestibulum magna. Integer pulvinar euismod magna, vel tincidunt lacus ultricies nec. Aenean vitae tortor nec augue convallis sollicitudin.</br></br>
+						Etiam bibendum finibus libero, et blandit odio suscipit nec. Nulla ac pharetra dolor. Donec sollicitudin neque eros, vel sagittis eros egestas ut. Donec ante lorem, luctus vestibulum scelerisque non, commodo ac ipsum. Integer eros tortor, ullamcorper porttitor felis eget, accumsan vehicula justo. Nullam imperdiet tellus vel rhoncus ultricies. Proin at dolor ullamcorper, pharetra tortor non, aliquet leo. Suspendisse suscipit molestie metus non ultricies. Aenean euismod turpis sit amet diam blandit ullamcorper. Integer congue ut neque ac interdum.</br></br>
+						Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent et ultricies ligula, eget tincidunt quam. Duis aliquet, justo sit amet sagittis consequat, tellus elit gravida odio, nec lobortis purus mauris et justo. Etiam pretium mi turpis, vitae ullamcorper lacus finibus id. Vivamus vitae risus posuere, aliquet ante eu, aliquet ipsum. Phasellus sagittis semper turpis, ac efficitur turpis. Donec interdum dui sodales felis efficitur, ac maximus leo eleifend. Donec hendrerit dictum facilisis. Quisque suscipit dolor arcu. Nulla est sapien, viverra vel neque eget, placerat venenatis lacus.</br></br>
+						Maecenas et quam non dui elementum cursus. Fusce feugiat eleifend metus, a rhoncus neque efficitur vel. Ut lobortis nulla sem, nec ultricies dui ornare non. Cras porta posuere dolor, non pretium quam pretium non. Mauris risus ante, faucibus pretium eros eget, porttitor tempor neque. Etiam semper massa ac enim iaculis vulputate. Donec id ligula quam. Pellentesque et mauris ac massa faucibus ultricies vitae sit amet mauris. Nam vitae erat sit amet mi ullamcorper tempor. Nulla facilisi. Sed volutpat orci nec placerat vulputate. Sed rhoncus dui eu ipsum pharetra, vitae faucibus nisi hendrerit. Etiam non hendrerit dolor, egestas tristique velit. Curabitur tempor quam sit amet velit feugiat venenatis.</br></br>
+						Proin dapibus, purus in sollicitudin auctor, ipsum lacus rhoncus nibh, ac fermentum justo eros a lorem. Mauris a dapibus nunc. Suspendisse potenti. Praesent euismod placerat nisi, in auctor nibh ultrices ac. Curabitur quis velit sodales, hendrerit tortor ac, venenatis elit. Sed a posuere mauris, in maximus neque. In a turpis eget nisl consectetur iaculis. Pellentesque rhoncus tellus tempor, sollicitudin enim id, feugiat ipsum. Vivamus aliquam id felis eget hendrerit. Aliquam maximus elit sed ipsum scelerisque, id condimentum dolor vehicula. Curabitur tempor, ante id semper dictum, massa orci commodo sapien, sed laoreet risus neque et arcu. Vivamus vel ante id lectus blandit suscipit. Integer felis libero, blandit vitae leo eu, dapibus vehicula nisi. Sed quis eros vitae eros dapibus tincidunt eget id nibh. Sed at odio nunc.</br></br>
+						Aenean suscipit massa a varius sollicitudin. Cras et libero in orci egestas imperdiet feugiat vitae orci. Donec blandit metus massa, id sollicitudin nisi facilisis eget. Integer maximus bibendum mi. Phasellus eu ultrices quam. Cras odio erat, volutpat eget purus ut, aliquet vestibulum magna. Integer pulvinar euismod magna, vel tincidunt lacus ultricies nec. Aenean vitae tortor nec augue convallis sollicitudin.</br></br>
+						Etiam bibendum finibus libero, et blandit odio suscipit nec. Nulla ac pharetra dolor. Donec sollicitudin neque eros, vel sagittis eros egestas ut. Donec ante lorem, luctus vestibulum scelerisque non, commodo ac ipsum. Integer eros tortor, ullamcorper porttitor felis eget, accumsan vehicula justo. Nullam imperdiet tellus vel rhoncus ultricies. Proin at dolor ullamcorper, pharetra tortor non, aliquet leo. Suspendisse suscipit molestie metus non ultricies. Aenean euismod turpis sit amet diam blandit ullamcorper. Integer congue ut neque ac interdum.</br></br>
+						Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent et ultricies ligula, eget tincidunt quam. Duis aliquet, justo sit amet sagittis consequat, tellus elit gravida odio, nec lobortis purus mauris et justo. Etiam pretium mi turpis, vitae ullamcorper lacus finibus id. Vivamus vitae risus posuere, aliquet ante eu, aliquet ipsum. Phasellus sagittis semper turpis, ac efficitur turpis. Donec interdum dui sodales felis efficitur, ac maximus leo eleifend. Donec hendrerit dictum facilisis. Quisque suscipit dolor arcu. Nulla est sapien, viverra vel neque eget, placerat venenatis lacus.</br></br>
+						Maecenas et quam non dui elementum cursus. Fusce feugiat eleifend metus, a rhoncus neque efficitur vel. Ut lobortis nulla sem, nec ultricies dui ornare non. Cras porta posuere dolor, non pretium quam pretium non. Mauris risus ante, faucibus pretium eros eget, porttitor tempor neque. Etiam semper massa ac enim iaculis vulputate. Donec id ligula quam. Pellentesque et mauris ac massa faucibus ultricies vitae sit amet mauris. Nam vitae erat sit amet mi ullamcorper tempor. Nulla facilisi. Sed volutpat orci nec placerat vulputate. Sed rhoncus dui eu ipsum pharetra, vitae faucibus nisi hendrerit. Etiam non hendrerit dolor, egestas tristique velit. Curabitur tempor quam sit amet velit feugiat venenatis.</br></br>
+						Proin dapibus, purus in sollicitudin auctor, ipsum lacus rhoncus nibh, ac fermentum justo eros a lorem. Mauris a dapibus nunc. Suspendisse potenti. Praesent euismod placerat nisi, in auctor nibh ultrices ac. Curabitur quis velit sodales, hendrerit tortor ac, venenatis elit. Sed a posuere mauris, in maximus neque. In a turpis eget nisl consectetur iaculis. Pellentesque rhoncus tellus tempor, sollicitudin enim id, feugiat ipsum. Vivamus aliquam id felis eget hendrerit. Aliquam maximus elit sed ipsum scelerisque, id condimentum dolor vehicula. Curabitur tempor, ante id semper dictum, massa orci commodo sapien, sed laoreet risus neque et arcu. Vivamus vel ante id lectus blandit suscipit. Integer felis libero, blandit vitae leo eu, dapibus vehicula nisi. Sed quis eros vitae eros dapibus tincidunt eget id nibh. Sed at odio nunc.</br></br>
+						Aenean suscipit massa a varius sollicitudin. Cras et libero in orci egestas imperdiet feugiat vitae orci. Donec blandit metus massa, id sollicitudin nisi facilisis eget. Integer maximus bibendum mi. Phasellus eu ultrices quam. Cras odio erat, volutpat eget purus ut, aliquet vestibulum magna. Integer pulvinar euismod magna, vel tincidunt lacus ultricies nec. Aenean vitae tortor nec augue convallis sollicitudin.</br></br>
+						Etiam bibendum finibus libero, et blandit odio suscipit nec. Nulla ac pharetra dolor. Donec sollicitudin neque eros, vel sagittis eros egestas ut. Donec ante lorem, luctus vestibulum scelerisque non, commodo ac ipsum. Integer eros tortor, ullamcorper porttitor felis eget, accumsan vehicula justo. Nullam imperdiet tellus vel rhoncus ultricies. Proin at dolor ullamcorper, pharetra tortor non, aliquet leo. Suspendisse suscipit molestie metus non ultricies. Aenean euismod turpis sit amet diam blandit ullamcorper. Integer congue ut neque ac interdum.</br></br>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="overlay" id="endmsg">
+			<div class="flex">
+				<div class="horizontal">
+					<div class="title">
+						Thank you for your participation
+					</div>
+				</div>
+				<div class="horizontal">
+					<div class="textbox" id="info">
+						Did you use inference: <div class="result" id="inf"></div></br>
+						Time to make an inference: <div class="result" id="inftime"></div> seconds
+					</div>
+				</div>
+			</div>
+		</div>
+		<!-- <div id="form_id" style="display: none">5595c3ca-77b3-4b82-a127-6bc542ccc052</div> -->
+		<div id="form_id">{{ form_id }}</div>
 	</body>
 </html>
