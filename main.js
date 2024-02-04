@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import {PointerLockControls} from 'three/addons/controls/PointerLockControls.js';
 
-let canvas = document.getElementById('three');;
+let canvas = document.getElementById('three');
 let overlay_start;
+let overlay_tutorial;
 let overlay_reading;
 let overlay_end;
 let timer_text;
@@ -17,6 +18,7 @@ let mistakes = 0;
 
 window.onload = () => {
     overlay_start = document.getElementById('agreement');
+    overlay_tutorial = document.getElementById('tutorial');
     document.getElementById('agree').onclick = () => {
         document.getElementById('info').style.display = 'none';
         document.getElementById('disagree').style.display = 'none';
@@ -27,7 +29,14 @@ window.onload = () => {
     document.getElementById('submit').onclick = () => {
         age = document.getElementById('age').value;
         sex = document.getElementById('sex').value;
+        if (!age) {
+            return;
+        }
         overlay_start.style.display = 'none';
+        overlay_tutorial.style.display = 'block';
+    };
+    document.getElementById('start').onclick = () => {
+        overlay_tutorial.style.display = 'none';
         add_pointer_control();
         controls_enabled = true;
         animate();
@@ -40,12 +49,12 @@ window.onload = () => {
     form_id = document.getElementById('form_id').innerText;
 };
 
-let time = 5; // 600
+let time = 600; // 600
 let controls_enabled = false;
 // PSA 10.941600000023842
 // NSA 16.75689999997616
 let state = 0;
-let phase = 1; // 0
+let phase = 0; // 0
 let group = Math.floor(Math.random() * 3);
 const COLOR_DISCS2 = [0x0394fc, 0xa600f0];
 const COLOR_MAP2 = {0: -1, 1: 1};
@@ -56,9 +65,9 @@ const COLOR_MAP4 = {0: -1, 1: -1, 2: 1, 3: 1};
 const COLOR_DISCS_ANTECEDENTS = [0x00ff00, 0xff0000];
 
 const GOAL_SUCCESS2 = 8;
-const GOAL_SUCCESS4 = 8; // 32
+const GOAL_SUCCESS4 = 32; // 32
 const GOAL_SUCCESS42 = 8;
-let successes = 7; // 0
+let successes = 0; // 0
 let chosen_direction = 0; // -1 for left, 1 for right, and 0 for undefined
 let current_color = 0;
 let current_antecedent_color = 0;
