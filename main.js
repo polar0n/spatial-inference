@@ -772,7 +772,8 @@ async function send_data() {
                 sex: Number(sex),
                 inference: Number(inference_made),
                 inferencet: Number(inference_time),
-                mistakes: mistakes
+                mistakes: mistakes,
+                group: group
             }
         })
     });

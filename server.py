@@ -39,9 +39,14 @@ schema = {
                 'mistakes': {
                     'type': 'number',
                     'minimum': 0
+                },
+                'group': {
+                    'type': 'number',
+                    'minimum': 0,
+                    'maximum': 2
                 }
             },
-            'required': ['age', 'sex', 'inference', 'inferencet', 'mistakes']
+            'required': ['age', 'sex', 'inference', 'inferencet', 'mistakes', 'group']
         }
     },
     'required': ['form_id', 'data']
@@ -91,7 +96,7 @@ async def api(request):
 
 def transform_data(data: dict) -> str:
     '''Transform JSON data into a CSV format.'''
-    return ','.join([str(data[key]) for key in ('age', 'sex', 'inference', 'inferencet', 'mistakes')])
+    return ','.join([str(data[key]) for key in ('age', 'sex', 'inference', 'inferencet', 'mistakes', 'group')])
 
 
 async def push_to_file(data: str):
