@@ -1,3 +1,7 @@
 sanic[ext]
 jsonschema
 jinja2
+asyncio
+aiofiles
+uuid
+functools

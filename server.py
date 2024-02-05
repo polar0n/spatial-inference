@@ -53,7 +53,7 @@ schema = {
 }
 
 
-app = Sanic("Experiment Backend")
+app = Sanic('Experiment_Backend')
 app.ctx.form_ids = list()
 app.ctx.filename = 'data_collection.csv'
 app.ctx.EMPTY_JSON = json(dict())
@@ -111,11 +111,13 @@ def generate_id():
 
     async def destroy_expired_form_id(form_id):
         '''Unregister the form_id if it expired after 30 minutes.'''
-        await asyncio.sleep(600)
+        await asyncio.sleep(1800)
+        print(f'Deregister: {form_id}')
         app.ctx.form_ids.remove(form_id)
 
 
     form_id = str(uuid.uuid4())
+    print(f'Register: {form_id}')
     app.ctx.form_ids.append(form_id)
     # Delegate a partial task to unregister the unclaimed id
     app.add_task(partial(destroy_expired_form_id, form_id), name=form_id)
