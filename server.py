@@ -67,7 +67,7 @@ async def index(_):
     )
 
 
-@app.options('/api')
+@app.post('/api')
 async def api(request):
     '''Process data collection from users.'''
     try:
@@ -88,6 +88,7 @@ async def api(request):
     app.ctx.form_ids.remove(form_id)
     # Transform data into CSV format
     data = transform_data(request.json['data'])
+    print(f'Received data: {data}')
     # Delegate task as a partial function to the loop that will write the collected data
     app.add_task(partial(push_to_file, data))
 
@@ -111,7 +112,7 @@ def generate_id():
 
     async def destroy_expired_form_id(form_id):
         '''Unregister the form_id if it expired after 30 minutes.'''
-        await asyncio.sleep(1800)
+        await asyncio.sleep(7200)
         print(f'Deregister: {form_id}')
         app.ctx.form_ids.remove(form_id)
 

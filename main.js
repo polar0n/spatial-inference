@@ -50,6 +50,8 @@ window.onload = () => {
 };
 
 let time = 600; // 600
+let end;
+let timer;
 let controls_enabled = false;
 // PSA 10.941600000023842
 // NSA 16.75689999997616
@@ -714,7 +716,9 @@ function reading_overlay_on() {
     pointercontrol.disconnect();
     overlay_reading.style.display = 'block';
     controls_enabled = false;
-    setTimeout(timer_second, 1000);
+
+    end = new Date((new Date().getTime()) + time * 10 * 1000);
+    timer = setInterval(timer_second, 200);
 };
 
 function reading_overlay_off() {
@@ -736,8 +740,11 @@ function ending_overlay_on() {
 
 // --- Timer ---
 function timer_second() {
-    time -= 1;
+    let now = new Date().getTime();
+    time = Math.floor(((end - now) % (1000 * 60)) / 1000);
+
     if (time <= 0) {
+        clearInterval(timer);
         setTimeout(reading_overlay_off, 0);
         return;
     };
@@ -750,7 +757,6 @@ function timer_second() {
         minutes = `0${minutes}`;
     };
     timer_text.innerText = `${minutes}:${seconds}`;
-    setTimeout(timer_second, 1000);
 };
 // --- Timer END ---
 
@@ -759,7 +765,7 @@ function update_score() {
 };
 
 async function send_data() {
-    const rawResponse = await fetch('/api', {
+    const rawResponse = await fetch('/data', {
         method: 'POST',
         headers: {
             'Accept': 'application/json',
