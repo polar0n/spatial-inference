@@ -33,6 +33,7 @@ window.onload = () => {
     document.getElementById('submit').onclick = () => {
         age = document.getElementById('age').value;
         sex = document.getElementById('sex').value;
+        update_score();
         if (!age) {
             return;
         }
@@ -104,7 +105,7 @@ let controls = {87: false, 83: false, 65: false, 68: false, 37: false, 39: false
 let player = {
     height: 5,
     turnSpeed: .1,
-    speed: 1, // .6
+    speed: 1.4, // .6
     jumpHeight: .9,
     gravity: .08,
     velocity: 0,
@@ -424,13 +425,7 @@ function switch_group() {
     traffic_meshes.forEach((mesh) => {scene.remove(mesh)});
     first_phase_meshes.forEach((mesh) => {scene.add(mesh)});
     scene.background = new THREE.Color(0x000000);
-    COLOR_PAIRS_MAP = [
-        [reveal_disc(false, COLOR_DISCS.blue), -1],
-        [reveal_disc(false, COLOR_DISCS.pink), 1],
-        [reveal_disc(false, COLOR_DISCS.yellow), -1],
-        [reveal_disc(true, COLOR_DISCS.blue), 1],
-        [reveal_disc(true, COLOR_DISCS.pink), -1]
-    ];
+    color_pairs_map = COLOR_PAIRS_G2;
     group = 1;
     switched_group = 1;
     stimulus_index = 0;
@@ -528,27 +523,29 @@ function reveal_disc(triangle, color1) {
     };
 };
 
-let COLOR_PAIRS_MAP;
+const COLOR_PAIRS_G1 = [
+    [reveal_disc(false, COLOR_DISCS.blue), -1],
+    [reveal_disc(false, COLOR_DISCS.pink), 1],
+    [reveal_disc(false, COLOR_DISCS.yellow), -1]
+];
+const COLOR_PAIRS_G2 = [
+    [reveal_disc(false, COLOR_DISCS.blue), -1],
+    [reveal_disc(false, COLOR_DISCS.pink), 1],
+    [reveal_disc(false, COLOR_DISCS.yellow), -1],
+    [reveal_disc(true, COLOR_DISCS.blue), 1],
+    [reveal_disc(true, COLOR_DISCS.pink), -1]
+];
+let color_pairs_map;
 if (group == 0) {
-    COLOR_PAIRS_MAP = [
-        [reveal_disc(false, COLOR_DISCS.blue), -1],
-        [reveal_disc(false, COLOR_DISCS.pink), 1],
-        [reveal_disc(false, COLOR_DISCS.yellow), -1]
-    ];
-} else if (group == 1) {
-    COLOR_PAIRS_MAP = [
-        [reveal_disc(false, COLOR_DISCS.blue), -1],
-        [reveal_disc(false, COLOR_DISCS.pink), 1],
-        [reveal_disc(false, COLOR_DISCS.yellow), -1],
-        [reveal_disc(true, COLOR_DISCS.blue), 1],
-        [reveal_disc(true, COLOR_DISCS.pink), -1]
-    ];
+    color_pairs_map = COLOR_PAIRS_G1;
+} else {
+    color_pairs_map = COLOR_PAIRS_G2;
 };
 
 function show_color_disc() {
     camera.lookAt(0, 5, 9.9);
     if (phase == 0 || phase == 1) {
-        COLOR_PAIRS_MAP[stimulus_index][0]();
+        color_pairs_map[stimulus_index][0]();
     } else if (switched_group && phase == 2) {
         reveal_disc(true, COLOR_DISCS.yellow)();
     };
@@ -669,19 +666,19 @@ function restart_training() {
     };
     // Evaluate and update the training colors and success
     if (group == 0) {
-        if (COLOR_PAIRS_MAP[stimulus_index][1] == chosen_direction) {
+        if (color_pairs_map[stimulus_index][1] == chosen_direction) {
             successes += 1;
-            stimulus_index = Math.floor(Math.random() * COLOR_PAIRS_MAP.length);
+            stimulus_index = Math.floor(Math.random() * color_pairs_map.length);
         } else {
             successes = 0;
             mistakes += 1;
         };
     } else if (group == 1) {
-        if (COLOR_PAIRS_MAP[stimulus_index][1] == chosen_direction) {
+        if (color_pairs_map[stimulus_index][1] == chosen_direction) {
             successes += 1;
             if (!exposed && !switched_group && (successes <= success_goal/2)) {
                 stimulus_index += 1;
-                stimulus_index = stimulus_index % (COLOR_PAIRS_MAP.length - 2);
+                stimulus_index = stimulus_index % (color_pairs_map.length - 2);
             } else {
                 if (!exposed) {
                     mistakes1 = mistakes;
@@ -689,7 +686,7 @@ function restart_training() {
                     exposed = true;
                 };
                 stimulus_index = Math.floor(
-                    Math.random() * COLOR_PAIRS_MAP.length
+                    Math.random() * color_pairs_map.length
                 );
             };
         } else {
@@ -776,11 +773,11 @@ function timer_second() {
 // --- Timer END ---
 
 function update_score() {
-    score_text.innerText = successes;
+    score_text.innerText = `${successes}/${success_goal}`;
 };
 
 async function send_data() {
-    const rawResponse = await fetch('/data', {
+    const rawResponse = await fetch('/api', {
         method: 'POST',
         headers: {
             'Accept': 'application/json',

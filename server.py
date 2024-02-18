@@ -9,9 +9,6 @@ from jsonschema import ValidationError as JSONValidationError
 from jsonschema import validate as json_validate
 
 
-logger.info('Started version 1.3')
-
-
 COLUMNS = ('age', 'sex', 'inference1', 'inferencet1', 'inference2', 'inferencet2', 'mistakes1', 'mistakes2', 'group')
 
 schema = {
@@ -72,14 +69,14 @@ schema = {
 }
 
 
-app = Sanic('Experiment_Backend')
+app = Sanic('Experiment_Backend14')
 app.ctx.form_ids = list()
 app.ctx.filename = 'data_collection.csv'
 app.ctx.EMPTY_JSON = json(dict())
 
 
 @app.get("/")
-async def index(_):
+async def index(request):
     '''Handle index requests and serve index.html with generated form_id.'''
     return await render(
         'index.html', context={'form_id': generate_id()}
@@ -92,13 +89,15 @@ async def api(request):
     try:
         json_validate(instance=request.json, schema=schema)
     except JSONValidationError as e:
-        print(e)
+        logger.info(f'The following JSON could not be validated: {request.json}')
+        logger.exception(e)
         return app.ctx.EMPTY_JSON
 
     form_id = request.json.get('form_id')
 
     # Check if the form_id is registered
     if form_id not in app.ctx.form_ids:
+        logger.exception(f'Non-existent ID received: {form_id}')
         return app.ctx.EMPTY_JSON
 
     # Cancel the auto-purge task for the current form_id
@@ -107,7 +106,7 @@ async def api(request):
     app.ctx.form_ids.remove(form_id)
     # Transform data into CSV format
     data = transform_data(request.json['data'])
-    logger(f'Received data: {data}')
+    logger.info(f'Received data: {data}')
     # Delegate task as a partial function to the loop that will write the collected data
     app.add_task(partial(push_to_file, data))
 
