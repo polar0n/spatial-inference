@@ -8,6 +8,8 @@ from jsonschema import ValidationError as JSONValidationError
 from jsonschema import validate as json_validate
 
 
+COLUMNS = ('age', 'sex', 'inference1', 'inferencet1', 'inference2', 'inferencet2', 'mistakes1', 'mistakes2', 'group')
+
 schema = {
     'type': 'object',
     'properties': {
@@ -27,16 +29,29 @@ schema = {
                     'minimum': 0,
                     'maximum': 1
                 },
-                'inference': {
+                'inference1': {
                     'type': 'number',
                     'minimum': 0,
                     'maximum': 1
                 },
-                'inferencet': {
+                'inferencet1': {
                     'type': 'number',
                     'minimum': 0
                 },
-                'mistakes': {
+                'inference2': {
+                    'type': 'number',
+                    'minimum': -1,
+                    'maximum': 1
+                },
+                'inferencet2': {
+                    'type': 'number',
+                    'minimum': -1
+                },
+                'mistakes1': {
+                    'type': 'number',
+                    'minimum': 0
+                },
+                'mistakes2': {
                     'type': 'number',
                     'minimum': 0
                 },
@@ -46,7 +61,7 @@ schema = {
                     'maximum': 2
                 }
             },
-            'required': ['age', 'sex', 'inference', 'inferencet', 'mistakes', 'group']
+            'required': list(COLUMNS)
         }
     },
     'required': ['form_id', 'data']
@@ -97,7 +112,7 @@ async def api(request):
 
 def transform_data(data: dict) -> str:
     '''Transform JSON data into a CSV format.'''
-    return ','.join([str(data[key]) for key in ('age', 'sex', 'inference', 'inferencet', 'mistakes', 'group')])
+    return ','.join([str(data[key]) for key in COLUMNS])
 
 
 async def push_to_file(data: str):

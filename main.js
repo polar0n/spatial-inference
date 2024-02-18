@@ -10,11 +10,15 @@ let timer_text;
 let score_text;
 let form_id;
 
-let inference_time = -1; // Time taken to make an inference
-let inference_made; // Whether an inference was made
+let inference_time2 = -1;
+let inference_made2 = -1;
+let inference_time1 = -1; // Time taken to make an inference
+let inference_made1; // Whether an inference was made
 let age;
 let sex;
 let mistakes = 0;
+let mistakes1 = 0;
+let mistakes2 = 0;
 
 window.onload = () => {
     overlay_start = document.getElementById('agreement');
@@ -49,31 +53,31 @@ window.onload = () => {
     form_id = document.getElementById('form_id').innerText;
 };
 
-let time = 600; // 600
 let end;
 let timer;
 let controls_enabled = false;
-// PSA 10.941600000023842
-// NSA 16.75689999997616
 let state = 0;
 let phase = 0; // 0
-let group = Math.floor(Math.random() * 3);
-const COLOR_DISCS2 = [0x0394fc, 0xa600f0];
-const COLOR_MAP2 = {0: -1, 1: 1};
+const GROUP = Math.floor(Math.random() * 2);
+// const GROUP = 0;
+let group = GROUP;
+const TIME = 600;
+let time = group ? TIME : TIME / 2;
+const COLOR_DISCS = {
+    blue: 0x0394fc, 
+    pink: 0xf00078, 
+    yellow: 0xf0e500
+};
 
-const COLOR_DISCS4 = [0x0394fc, 0xa600f0, 0xf00078, 0xf0e500];
-const COLOR_MAP4 = {0: -1, 1: -1, 2: 1, 3: 1};
-
-const COLOR_DISCS_ANTECEDENTS = [0x00ff00, 0xff0000];
-
-const GOAL_SUCCESS2 = 8;
-const GOAL_SUCCESS4 = 32; // 32
-const GOAL_SUCCESS42 = 8;
+const _SUCCESSES_G2 = 64; // 64
+const _SUCCESSES_G1 = _SUCCESSES_G2 / 2; // 32
+let success_goal = group ? _SUCCESSES_G2 : _SUCCESSES_G1;
 let successes = 0; // 0
 let chosen_direction = 0; // -1 for left, 1 for right, and 0 for undefined
-let current_color = 0;
-let current_antecedent_color = 0;
-let phase_direction_modifier = 1;
+let stimulus_index = 0;
+let measuring_time = false;
+let switched_group = false;
+let exposed = false;
 
 let w = window.innerWidth;
 let h = window.innerHeight;
@@ -83,7 +87,8 @@ let cam_pos = new THREE.Vector3;
 const J_UNIT = new THREE.Vector3(0, 1, 0);
 const LIGHTS = {
     blue: new THREE.Color(0x0000ff),
-    magenta: new THREE.Color(0xff00ff)
+    magenta: new THREE.Color(0xff00ff),
+    yellow: new THREE.Color(0xc2c200)
 }
 
 const renderer = new THREE.WebGLRenderer({
@@ -99,7 +104,7 @@ let controls = {87: false, 83: false, 65: false, 68: false, 37: false, 39: false
 let player = {
     height: 5,
     turnSpeed: .1,
-    speed: .6,
+    speed: 1, // .6
     jumpHeight: .9,
     gravity: .08,
     velocity: 0,
@@ -117,7 +122,7 @@ camera.lookAt(0, player.height, 0);
 let pointercontrol;
 function add_pointer_control() {
     pointercontrol = new PointerLockControls(camera, document.body);
-}
+};
 // --- Pointer Control END ---
 
 const scene = new THREE.Scene();
@@ -144,8 +149,12 @@ plane1.rotation.x -= Math.PI / 2;
 plane1.receiveShadow = true;
 first_phase_meshes.push(plane1);
 
-const disc_material = new THREE.MeshBasicMaterial();
-let color_disc = new THREE.Mesh(new THREE.CircleGeometry(1), disc_material);
+const circle_geom = new THREE.CircleGeometry(1);
+const triangle_geom = new THREE.CircleGeometry(1.5, 3, -Math.PI/2);
+// const triangle_geom = new THREE.CylinderGeometry(1.4, 1.4, 2, 3, 1, false, -Math.PI/2);
+
+const stimuli_material = new THREE.MeshBasicMaterial();
+let color_disc = new THREE.Mesh(new THREE.CircleGeometry(1), stimuli_material);
 color_disc.position.set(0, 5, 9.9);
 first_phase_meshes.push(color_disc);
 
@@ -209,13 +218,14 @@ first_phase_meshes.push(right_arm_choice_wall);
 let start_arm_choice_wall = new THREE.Mesh(small_wall_geometry.clone(), choice_wall_material.clone());
 start_arm_choice_wall.position.set(0, 5, -11);
 first_phase_meshes.push(start_arm_choice_wall);
+
 first_phase_meshes.forEach((mesh) => {scene.add(mesh)});
 
 // PHASE 3 ENVIRONMENT
 let last_phase_meshes = [];
 let traffic_meshes = [];
 let TRAFFIC_COLOR = 0x858585;
-let POLE_HEIGHT = 18;
+let POLE_HEIGHT = 12;
 const pole_geometry = new THREE.CylinderGeometry(.25, .25, POLE_HEIGHT, 32);
 const pole_material = new THREE.MeshPhongMaterial({color:TRAFFIC_COLOR});
 const pole = new THREE.Mesh(pole_geometry, pole_material);
@@ -234,21 +244,37 @@ box.receiveShadow = true;
 box.castShadow = true;
 traffic_meshes.push(box);
 
-const traffic_light_geometry1 = new THREE.SphereGeometry(1.4, 32, 16);
-const traffic_light_material1 = new THREE.MeshPhongMaterial({color: LIGHTS.blue});
-const traffic_light1 = new THREE.Mesh(traffic_light_geometry1, traffic_light_material1);
+let traffic_light_circle1;
+if (group == 0) {
+    traffic_light_circle1 = new THREE.SphereGeometry(1.4, 32, 16);
+} else {
+    traffic_light_circle1 = new THREE.CylinderGeometry(1.4, 1.4, 2, 3, 1, false, -Math.PI/2);
+};
+const traffic_light_material1 = new THREE.MeshPhongMaterial({color: LIGHTS.magenta});
+const traffic_light1 = new THREE.Mesh(traffic_light_circle1, traffic_light_material1);
 traffic_light1.position.y = POLE_HEIGHT + 0.8;
 traffic_light1.position.z = 10 - 3/2 + 0.5;
+if (group != 0) {
+    traffic_light1.rotateY(-Math.PI/2);
+    traffic_light1.rotateZ(-Math.PI/2);
+};
 traffic_meshes.push(traffic_light1);
 
-const traffic_light_geometry2 = new THREE.SphereGeometry(1.4, 32, 16);
-const traffic_light_material2 = new THREE.MeshPhongMaterial({color: LIGHTS.magenta});
-const traffic_light2 = new THREE.Mesh(traffic_light_geometry2, traffic_light_material2);
+let traffic_light_circle2;
+if (group == 0) {
+    traffic_light_circle2 = new THREE.SphereGeometry(1.4, 32, 16);
+} else {
+    traffic_light_circle2 = new THREE.CylinderGeometry(1.4, 1.4, 2, 3, 1, false, -Math.PI/2);
+};
+const traffic_light_material2 = new THREE.MeshPhongMaterial({color: LIGHTS.yellow});
+const traffic_light2 = new THREE.Mesh(traffic_light_circle2, traffic_light_material2);
 traffic_light2.position.y = POLE_HEIGHT + 3.6;
 traffic_light2.position.z = 10 - 3/2 + 0.5;
-// traffic_light2.matrixAutoUpdate = false;
+if (group != 0) {
+    traffic_light2.rotateY(-Math.PI/2);
+    traffic_light2.rotateZ(-Math.PI/2);
+};
 traffic_meshes.push(traffic_light2);
-
 
 const grass_material = new THREE.MeshStandardMaterial({
     roughness: 1,
@@ -384,13 +410,35 @@ function initiate_phase3() {
     scene.background = new THREE.Color().setHSL( 0.6, 1, 0.6 );
     scene.fog.color.setHSL(0.6, 1, 0.6);
     if (group == 0) {
-        traffic_light1.material.color.set(COLOR_DISCS2[1]);
-        traffic_light2.material.color.set(COLOR_DISCS2[0]);
-    } else {
-        traffic_light1.material.color.set(COLOR_DISCS4[1]);
-        traffic_light2.material.color.set(COLOR_DISCS4[3]);
+        traffic_light1.material.color.set(COLOR_DISCS.yellow);
+        traffic_light2.material.color.set(COLOR_DISCS.blue);
+    } else if (group == 1) {
+        traffic_light1.material.color.set(COLOR_DISCS.pink);
+        traffic_light2.material.color.set(COLOR_DISCS.yellow);
     };
-}
+};
+
+function switch_group() {
+    switched_group = true;
+    last_phase_meshes.forEach((mesh) => {scene.remove(mesh)});
+    traffic_meshes.forEach((mesh) => {scene.remove(mesh)});
+    first_phase_meshes.forEach((mesh) => {scene.add(mesh)});
+    scene.background = new THREE.Color(0x000000);
+    COLOR_PAIRS_MAP = [
+        [reveal_disc(false, COLOR_DISCS.blue), -1],
+        [reveal_disc(false, COLOR_DISCS.pink), 1],
+        [reveal_disc(false, COLOR_DISCS.yellow), -1],
+        [reveal_disc(true, COLOR_DISCS.blue), 1],
+        [reveal_disc(true, COLOR_DISCS.pink), -1]
+    ];
+    group = 1;
+    switched_group = 1;
+    stimulus_index = 0;
+    successes = _SUCCESSES_G1;
+    success_goal = _SUCCESSES_G2;
+    phase = 0;
+    exposed = true;
+};
 
 
 document.addEventListener('keydown', ({keyCode}) => {controls[keyCode] = true & controls_enabled});
@@ -441,7 +489,6 @@ function control() {
     // Control user movement in the maze based on the pressed button
     camera.getWorldDirection(direction);
     cam_pos = camera.position.clone();
-    // console.log(cam_pos);
     if (controls[87]) { // w
         cam_pos.addScaledVector(direction, player.speed);
     } else if (controls[83]) { // s
@@ -469,34 +516,11 @@ function control() {
 
 function rotate_disc () { color_disc.rotation.x += Math.PI };
 
-function show_color_disc() {
-    camera.lookAt(0, 5, 9.9);
-    if (group == 0) {
-        color_disc.material.color.set(COLOR_DISCS2[current_color]);
-        rotate_disc();
-        setTimeout(() => {
-            rotate_disc();
-        }, 1300);
-    } else if (group == 1) {
-        if (phase == 0) {
-            color_disc.material.color.set(COLOR_DISCS4[current_color]);
-            rotate_disc();
-            setTimeout(() => {
-                color_disc.material.color.set(COLOR_DISCS_ANTECEDENTS[current_antecedent_color]);
-            }, 1300);
-            setTimeout(() => {
-                rotate_disc();
-            }, 2600);
-        } else if (phase == 1) {
-            color_disc.material.color.set(COLOR_DISCS4[current_color]);
-            rotate_disc();
-            setTimeout(() => {
-                rotate_disc();
-            }, 1300);
-        };
-        
-    } else if (group == 2) {
-        color_disc.material.color.set(COLOR_DISCS4[current_color]);
+function reveal_disc(triangle, color1) {
+    return function () {
+        color_disc.geometry = triangle ? triangle_geom : circle_geom;
+        color_disc.updateMatrix();
+        color_disc.material.color.set(color1);
         rotate_disc();
         setTimeout(() => {
             rotate_disc();
@@ -504,21 +528,45 @@ function show_color_disc() {
     };
 };
 
+let COLOR_PAIRS_MAP;
+if (group == 0) {
+    COLOR_PAIRS_MAP = [
+        [reveal_disc(false, COLOR_DISCS.blue), -1],
+        [reveal_disc(false, COLOR_DISCS.pink), 1],
+        [reveal_disc(false, COLOR_DISCS.yellow), -1]
+    ];
+} else if (group == 1) {
+    COLOR_PAIRS_MAP = [
+        [reveal_disc(false, COLOR_DISCS.blue), -1],
+        [reveal_disc(false, COLOR_DISCS.pink), 1],
+        [reveal_disc(false, COLOR_DISCS.yellow), -1],
+        [reveal_disc(true, COLOR_DISCS.blue), 1],
+        [reveal_disc(true, COLOR_DISCS.pink), -1]
+    ];
+};
+
+function show_color_disc() {
+    camera.lookAt(0, 5, 9.9);
+    if (phase == 0 || phase == 1) {
+        COLOR_PAIRS_MAP[stimulus_index][0]();
+    } else if (switched_group && phase == 2) {
+        reveal_disc(true, COLOR_DISCS.yellow)();
+    };
+};
+
 function show_traffic_light() {
     traffic_meshes.forEach((mesh) => {scene.add(mesh)});
     camera.lookAt(0, 6 / 3 + POLE_HEIGHT, 10);
+    let color;
+    if (group == 0) { color = COLOR_DISCS.blue } else { color = COLOR_DISCS.yellow };
+
     setTimeout(() => {
-        if (group == 0) {
-            setTimeout(() => { traffic_blinking(COLOR_DISCS2[0]) }, 0);
-            traffic_light2.material = new THREE.MeshBasicMaterial({color: COLOR_DISCS2[0]});
-            traffic_light2.updateMatrix();
-        } else {
-            setTimeout(() => { traffic_blinking(COLOR_DISCS4[3]) }, 0)
-            traffic_light2.material = new THREE.MeshBasicMaterial({color: COLOR_DISCS4[3]});
-            traffic_light2.updateMatrix();
-        };
+        setTimeout(() => { traffic_blinking(color) }, 0);
+        traffic_light2.material = new THREE.MeshBasicMaterial({color: color});
+        traffic_light2.updateMatrix();
         // Measure the time of inference
         clock.start();
+        measuring_time = true;
     }, 300);
 };
 
@@ -530,7 +578,7 @@ function traffic_blinking(color) {
         traffic_light2.material = materials[blinks % 2];
         traffic_light2.updateMatrix();
         blinks += 1;
-        if (blinks < 4) {
+        if (blinks < 2) {
             setTimeout(change_material, 700);
         };
     };
@@ -550,11 +598,22 @@ function ixMovementUpdate() {
 
 function state_flow() {
     let pos = camera.position.clone();
+    // If the participant is in the center of maze
     if (state == 0 && pos.z > -9 && pos.z < 9 && pos.x > -9 && pos.x < 9) {
         state = 1;
-        if (phase != 2) { show_color_disc() } else { show_traffic_light() };
+        if (phase != 2) {
+            show_color_disc();
+        } else {
+            if (switched_group) {
+                show_color_disc();
+                clock.start();
+                measuring_time = true;
+            } else {
+                show_traffic_light();
+            }
+        };
     };
-}
+};
 
 function await_user_direction() {
     if (controls[37]) {
@@ -566,7 +625,11 @@ function await_user_direction() {
         state = 2;
         right_arm_choice_wall.rotation.y += Math.PI;
     };
-}
+    if ((controls[37] || controls[39]) && measuring_time) {
+        clock.stop();
+        measuring_time = false;
+    };
+};
 
 function await_finish() {
     // Await the user to get to the end of the arm
@@ -574,17 +637,21 @@ function await_finish() {
     if (camera.position.x > 80.0 || camera.position.x < -80.0) {
         // If the user is in the the last, test, phase
         if (phase == 2) {
-            clock.stop();
-            inference_time = clock.elapsedTime.toFixed(3);
-            document.getElementById('inftime').innerText = inference_time;
-            phase = -1;
             if (group == 0) {
-                inference_made = camera.position.x < -80.0;
+                inference_made2 = chosen_direction == -1;
+                inference_time2 = clock.elapsedTime.toFixed(7);
+                mistakes1 = mistakes;
+                mistakes = 0;
+                switch_group();
             } else {
-                inference_made = camera.position.x > 80.0;
+                mistakes2 = mistakes;
+                inference_made1 = chosen_direction == 1;
+                inference_time1 = clock.elapsedTime.toFixed(7);
+                document.getElementById('inftime').innerText = inference_time1;
+                document.getElementById('inf').innerText = (inference_made1) ? 'Yes' : 'No';
+                phase = -1;
+                setTimeout(ending_overlay_on, 0);
             };
-            document.getElementById('inf').innerText = (inference_made) ? 'Yes' : 'No';
-            setTimeout(ending_overlay_on, 0);
         } else {
             // Put the user at the start arm
             restart_training();
@@ -602,91 +669,38 @@ function restart_training() {
     };
     // Evaluate and update the training colors and success
     if (group == 0) {
-        if (COLOR_MAP2[current_color] == phase_direction_modifier * chosen_direction) {
+        if (COLOR_PAIRS_MAP[stimulus_index][1] == chosen_direction) {
             successes += 1;
-            current_color += 1;
-            current_color %= 2;
+            stimulus_index = Math.floor(Math.random() * COLOR_PAIRS_MAP.length);
         } else {
             successes = 0;
             mistakes += 1;
         };
-        if (successes == GOAL_SUCCESS2) {
-            if (phase == 0) {
-                phase = 1;
-                phase_direction_modifier = -1;
-                successes = 0;
-            } else if (phase == 1) {
-                phase = 2;
-                setTimeout(reading_overlay_on, 0);
-            };
-        };
     } else if (group == 1) {
-        if (phase == 0) {
-            if (COLOR_MAP4[current_color] == chosen_direction) {
-                successes += 1;
-                current_color += 1;
-                current_color %= 4;
-                current_antecedent_color = Math.floor(current_color / 2);
+        if (COLOR_PAIRS_MAP[stimulus_index][1] == chosen_direction) {
+            successes += 1;
+            if (!exposed && !switched_group && (successes <= success_goal/2)) {
+                stimulus_index += 1;
+                stimulus_index = stimulus_index % (COLOR_PAIRS_MAP.length - 2);
             } else {
-                successes = 0;
-                mistakes += 1;
+                if (!exposed) {
+                    mistakes1 = mistakes;
+                    mistakes = 0;
+                    exposed = true;
+                };
+                stimulus_index = Math.floor(
+                    Math.random() * COLOR_PAIRS_MAP.length
+                );
             };
-            if (successes == GOAL_SUCCESS4) {
-                phase = 1;
-                phase_direction_modifier = -1;
-                successes = 0;
-                current_color = 0;
-                current_antecedent_color = 0;
-            };
-        } else if (phase == 1) {
-            if (COLOR_MAP4[current_color] == phase_direction_modifier * chosen_direction) {
-                successes += 1;
-                current_color += 2;
-                current_color %= 4;
-            } else {
-                successes = 0;
-                mistakes += 1;
-            };
-            if (successes == GOAL_SUCCESS42) {
-                console.log('next phase');
-                phase = 2;
-                setTimeout(reading_overlay_on, 0);
-            };
+        } else {
+            successes = 0;
+            mistakes += 1;
         };
-    } else if (group == 2) {
-        if (phase == 0) {
-            if (COLOR_MAP4[current_color] == chosen_direction) {
-                console.log('correct', successes);
-                successes += 1;
-                current_color += 1;
-                current_color %= 4;
-            } else {
-                successes = 0;
-                mistakes += 1;
-            };
-            if (successes == GOAL_SUCCESS4) {
-                console.log('next phase');
-                phase = 1;
-                phase_direction_modifier = -1;
-                successes = 0;
-                current_color = 0;
-            };
-        } else if (phase == 1) {
-            if (COLOR_MAP4[current_color] == phase_direction_modifier * chosen_direction) {
-                console.log('correct', successes);
-                successes += 1;
-                current_color += 2;
-                current_color %= 4;
-            } else {
-                successes = 0;
-                mistakes += 1;
-            };
-            if (successes == GOAL_SUCCESS42) {
-                console.log('next phase');
-                phase = 2;
-                setTimeout(reading_overlay_on, 0);
-            };
-        };
+    };
+    if (successes == success_goal) {
+        phase = 2;
+        successes = 0;
+        setTimeout(reading_overlay_on, 0);
     };
     state = 0;
     chosen_direction = 0;
@@ -717,7 +731,7 @@ function reading_overlay_on() {
     overlay_reading.style.display = 'block';
     controls_enabled = false;
 
-    end = new Date((new Date().getTime()) + time * 10 * 1000);
+    end = new Date().getTime() + time * 1000;
     timer = setInterval(timer_second, 200);
 };
 
@@ -726,7 +740,9 @@ function reading_overlay_off() {
     pointercontrol.lock();
     overlay_reading.style.display = 'none';
     controls_enabled = true;
-    setTimeout(initiate_phase3, 0);
+    if (!switched_group) {
+        setTimeout(initiate_phase3, 0);
+    };
 };
 
 function ending_overlay_on() {
@@ -735,24 +751,23 @@ function ending_overlay_on() {
     pointercontrol.disconnect();
     controls_enabled = false;
     setTimeout(send_data, 0);
-}
+};
 // --- Overlay functions END ---
 
 // --- Timer ---
 function timer_second() {
-    let now = new Date().getTime();
-    time = Math.floor(((end - now) % (1000 * 60)) / 1000);
+    let time_left = Math.floor((end - new Date().getTime()) / 1000);
 
-    if (time <= 0) {
+    if (time_left <= 0) {
         clearInterval(timer);
         setTimeout(reading_overlay_off, 0);
         return;
     };
-    let seconds = time % 60;
+    let seconds = time_left % 60;
     if (seconds < 10) {
         seconds = `0${seconds}`;
     };
-    let minutes = Math.floor(time / 60);
+    let minutes = Math.floor(time_left / 60);
     if (minutes < 10) {
         minutes = `0${minutes}`;
     };
@@ -776,14 +791,16 @@ async function send_data() {
             data: {
                 age: Number(age),
                 sex: Number(sex),
-                inference: Number(inference_made),
-                inferencet: Number(inference_time),
-                mistakes: mistakes,
-                group: group
+                inference1: Number(inference_made1),
+                inferencet1: Number(inference_time1),
+                inference2: Number(inference_made2),
+                inferencet2: Number(inference_time2),
+                mistakes1: mistakes1,
+                mistakes2: mistakes2,
+                group: GROUP
             }
         })
     });
-    const content = await rawResponse.json();
-
-    console.log(content);
+    // const content = await rawResponse.json();
+    // console.log(content);
 };
