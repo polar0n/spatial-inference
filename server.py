@@ -2,10 +2,14 @@ import asyncio
 import aiofiles
 from sanic import Sanic, json
 from sanic_ext import render
+from sanic.log import logger
 import uuid
 from functools import partial
 from jsonschema import ValidationError as JSONValidationError
 from jsonschema import validate as json_validate
+
+
+logger.info('Started version 1.3')
 
 
 COLUMNS = ('age', 'sex', 'inference1', 'inferencet1', 'inference2', 'inferencet2', 'mistakes1', 'mistakes2', 'group')
@@ -103,7 +107,7 @@ async def api(request):
     app.ctx.form_ids.remove(form_id)
     # Transform data into CSV format
     data = transform_data(request.json['data'])
-    print(f'Received data: {data}')
+    logger(f'Received data: {data}')
     # Delegate task as a partial function to the loop that will write the collected data
     app.add_task(partial(push_to_file, data))
 
@@ -128,12 +132,12 @@ def generate_id():
     async def destroy_expired_form_id(form_id):
         '''Unregister the form_id if it expired after 30 minutes.'''
         await asyncio.sleep(7200)
-        print(f'Deregister: {form_id}')
+        logger.info(f'Deregister: {form_id}')
         app.ctx.form_ids.remove(form_id)
 
 
     form_id = str(uuid.uuid4())
-    print(f'Register: {form_id}')
+    logger.info(f'Register: {form_id}')
     app.ctx.form_ids.append(form_id)
     # Delegate a partial task to unregister the unclaimed id
     app.add_task(partial(destroy_expired_form_id, form_id), name=form_id)
