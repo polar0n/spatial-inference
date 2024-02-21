@@ -135,6 +135,6 @@ body > * {
     font-style: italic;
 }
 
-#form_id {
+.hidden {
     display: none;
 }

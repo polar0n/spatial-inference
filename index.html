@@ -27,12 +27,12 @@
 		</script>
 		<script type="module" src="/main.js"></script>
 		<canvas id="three"></canvas>
-		<div id="score">0/32</div>
+		<div id="score">0/0</div>
 		<div class="overlay" id="agreement">
 			<div class="flex">
 				<div class="horizontal">
 					<div class="title">
-						Spatial Inference
+						Spatial Inference Experiment
 					</div>
 				</div>
 				<div class="horizontal">
@@ -51,7 +51,11 @@
 						<div><div>What is your biological sex: </div><select name="sex" id="sex">
 							<option value="0">Female</option>
 							<option value="1">Male</option>
-						</select></div>
+						</select></div></br>
+						<div><div>Do you have colorblindness?</div><select name="colorblindness" id="colorblindness">
+							<option value="0">No</option>
+							<option value="1">Yes</option>
+						</select></div></br>
 					</div>
 				</div>
 				<div class="horizontal">
@@ -125,6 +129,7 @@
 				</div>
 			</div>
 		</div>
-		<div id="form_id">{{ form_id }}</div>
+		<div id="form_id" class="hidden">{{ form_id }}</div>
+		<div id="group" class="hidden">{{ group }}</div>
 	</body>
 </html>

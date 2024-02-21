@@ -9,7 +9,20 @@ from jsonschema import ValidationError as JSONValidationError
 from jsonschema import validate as json_validate
 
 
-COLUMNS = ('age', 'sex', 'inference1', 'inferencet1', 'inference2', 'inferencet2', 'mistakes1', 'mistakes2', 'group')
+COLUMNS = (
+    'age',
+    'sex',
+    'cb',
+    'choice_time1',
+    'choice_time2',
+    'inference1',
+    'inferencet1',
+    'inference2',
+    'inferencet2',
+    'mistakes1',
+    'mistakes2',
+    'group'
+)
 
 schema = {
     'type': 'object',
@@ -30,14 +43,27 @@ schema = {
                     'minimum': 0,
                     'maximum': 1
                 },
-                'inference1': {
+                'cb': {
                     'type': 'number',
                     'minimum': 0,
                     'maximum': 1
                 },
+                'choice_time1': {
+                    'type': 'number',
+                    'minimum' : -1
+                },
+                'inference1': {
+                    'type': 'number',
+                    'minimum': -1,
+                    'maximum': 1
+                },
                 'inferencet1': {
                     'type': 'number',
-                    'minimum': 0
+                    'minimum': -1
+                },
+                'choice_time2': {
+                    'type': 'number',
+                    'minimum': -1
                 },
                 'inference2': {
                     'type': 'number',
@@ -63,23 +89,35 @@ schema = {
                 }
             },
             'required': list(COLUMNS)
+        },
+        'timesg1': {
+            'type': 'array'
+        },
+        'timesg2': {
+            'type': 'array'
         }
     },
-    'required': ['form_id', 'data']
+    'required': ['form_id', 'data', 'timesg1', 'timesg2']
 }
 
 
-app = Sanic('Experiment_Backend14')
+app = Sanic('Experiment_Backend15')
 app.ctx.form_ids = list()
-app.ctx.filename = 'data_collection.csv'
+app.ctx.csv = 'data_collection.csv'
+app.ctx.txt = 'times_data.txt'
+app.ctx.group_cycle = False
 app.ctx.EMPTY_JSON = json(dict())
 
 
 @app.get("/")
 async def index(request):
     '''Handle index requests and serve index.html with generated form_id.'''
+    app.ctx.group_cycle = not app.ctx.group_cycle
     return await render(
-        'index.html', context={'form_id': generate_id()}
+        'index.html', context={
+            'form_id': generate_id(),
+            'group': int(app.ctx.group_cycle)
+        }
     )
 
 
@@ -108,7 +146,12 @@ async def api(request):
     data = transform_data(request.json['data'])
     logger.info(f'Received data: {data}')
     # Delegate task as a partial function to the loop that will write the collected data
-    app.add_task(partial(push_to_file, data))
+    app.add_task(partial(push_to_file, app.ctx.csv, data))
+    app.add_task(partial(
+        push_to_file,
+        app.ctx.txt,
+        str([request.json['timesg1'], request.json['timesg2']])
+    ))
 
     return app.ctx.EMPTY_JSON
 
@@ -118,9 +161,9 @@ def transform_data(data: dict) -> str:
     return ','.join([str(data[key]) for key in COLUMNS])
 
 
-async def push_to_file(data: str):
+async def push_to_file(filename:str, data: str):
     '''Asynchronously write the data to the file.'''
-    async with aiofiles.open(app.ctx.filename, mode='a') as file:
+    async with aiofiles.open(filename, mode='a') as file:
         await file.write(data + '\n')
 
 

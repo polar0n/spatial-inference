@@ -10,15 +10,22 @@ let timer_text;
 let score_text;
 let form_id;
 
+let timesg1 = [];
+let timesg2 = [];
 let inference_time2 = -1;
 let inference_made2 = -1;
 let inference_time1 = -1; // Time taken to make an inference
-let inference_made1; // Whether an inference was made
+let inference_made1 = -1; // Whether an inference was made
+let choice_time1 = -1; // Time taken to make a choice before test
+let choice_time2 = -1;
 let age;
 let sex;
+let colorbl;
 let mistakes = 0;
 let mistakes1 = 0;
 let mistakes2 = 0;
+
+var _group = _group = Math.floor(Math.random() * 2);
 
 window.onload = () => {
     overlay_start = document.getElementById('agreement');
@@ -33,6 +40,7 @@ window.onload = () => {
     document.getElementById('submit').onclick = () => {
         age = document.getElementById('age').value;
         sex = document.getElementById('sex').value;
+        colorbl = document.getElementById('colorblindness').value;
         update_score();
         if (!age) {
             return;
@@ -52,6 +60,8 @@ window.onload = () => {
     timer_text = document.getElementById('time');
     score_text = document.getElementById('score');
     form_id = document.getElementById('form_id').innerText;
+    let try_group = document.getElementById('group').innerText;
+    if (!isNaN(try_group)) { _group = Number(try_group) };
 };
 
 let end;
@@ -59,10 +69,9 @@ let timer;
 let controls_enabled = false;
 let state = 0;
 let phase = 0; // 0
-const GROUP = Math.floor(Math.random() * 2);
-// const GROUP = 0;
-let group = GROUP;
-const TIME = 600;
+// const _group = Math.floor(Math.random() * 2);
+let group = _group;
+const TIME = 600; // 600
 let time = group ? TIME : TIME / 2;
 const COLOR_DISCS = {
     blue: 0x0394fc, 
@@ -70,13 +79,40 @@ const COLOR_DISCS = {
     yellow: 0xf0e500
 };
 
-const _SUCCESSES_G2 = 64; // 64
-const _SUCCESSES_G1 = _SUCCESSES_G2 / 2; // 32
+// var item = items[Math.floor(Math.random() * items.length)];
+
+const BASE_COLOR_PAIRS_CIRCLE = [
+    [false, COLOR_DISCS.blue, -1],
+    [false, COLOR_DISCS.pink, 1],
+    [false, COLOR_DISCS.yellow, -1]
+];
+const BASE_COLOR_PAIRS_TRIANGLE = [
+    [true, COLOR_DISCS.blue, 1],
+    [true, COLOR_DISCS.pink, -1]
+];
+
+let COLOR_LIST_G1P1 = [];
+while (COLOR_LIST_G1P1.length <= 33) {
+    COLOR_LIST_G1P1 = COLOR_LIST_G1P1.concat(BASE_COLOR_PAIRS_CIRCLE);
+};
+let color_list_g1p1 = Array.from(COLOR_LIST_G1P1);
+
+let COLOR_LIST_G1P2 = [];
+while (COLOR_LIST_G1P2.length <= 22) {
+    COLOR_LIST_G1P2 = COLOR_LIST_G1P2.concat(BASE_COLOR_PAIRS_TRIANGLE);
+};
+while (COLOR_LIST_G1P2.length <= 33) {
+    COLOR_LIST_G1P2 = COLOR_LIST_G1P2.concat(BASE_COLOR_PAIRS_CIRCLE);
+};
+let color_list_g1p2 = Array.from(COLOR_LIST_G1P2);
+
+const _SUCCESSES_G2 = 66; // 66
+const _SUCCESSES_G1 = _SUCCESSES_G2 / 2; // 33
 let success_goal = group ? _SUCCESSES_G2 : _SUCCESSES_G1;
 let successes = 0; // 0
 let chosen_direction = 0; // -1 for left, 1 for right, and 0 for undefined
-let stimulus_index = 0;
-let measuring_time = false;
+let choice_correct = 0;
+let stimulus_pair = color_list_g1p1.splice(0, 1)[0];
 let switched_group = false;
 let exposed = false;
 
@@ -152,15 +188,16 @@ first_phase_meshes.push(plane1);
 
 const circle_geom = new THREE.CircleGeometry(1);
 const triangle_geom = new THREE.CircleGeometry(1.5, 3, -Math.PI/2);
-// const triangle_geom = new THREE.CylinderGeometry(1.4, 1.4, 2, 3, 1, false, -Math.PI/2);
 
 const stimuli_material = new THREE.MeshBasicMaterial();
 let color_disc = new THREE.Mesh(new THREE.CircleGeometry(1), stimuli_material);
 color_disc.position.set(0, 5, 9.9);
 first_phase_meshes.push(color_disc);
 
-const wall_material = new THREE.MeshPhongMaterial(); // 0x878170
-wall_material.color.set(0x878170);
+const wall_material1 = new THREE.MeshPhongMaterial(); // 0x878170
+wall_material1.color.set(0x878170);
+const wall_material2 = new THREE.MeshPhongMaterial(); // 0x878170
+wall_material2.color.set(0x827e65);
 const choice_wall_material = new THREE.MeshPhongMaterial();
 choice_wall_material.color.set(0x73221d);
 
@@ -168,40 +205,40 @@ const wall_geometry = new THREE.PlaneGeometry(90, 10);
 const small_wall_geometry = new THREE.PlaneGeometry(20, 10);
 
 
-let start_arm_wall_right = new THREE.Mesh(wall_geometry.clone(), wall_material.clone());
+let start_arm_wall_right = new THREE.Mesh(wall_geometry.clone(), wall_material1.clone());
 start_arm_wall_right.position.set(-10, 5, -55)
 start_arm_wall_right.rotation.y += Math.PI / 2;
 first_phase_meshes.push(start_arm_wall_right);
 
-let start_arm_wall_left = new THREE.Mesh(wall_geometry.clone(), wall_material.clone());
+let start_arm_wall_left = new THREE.Mesh(wall_geometry.clone(), wall_material1.clone());
 start_arm_wall_left.position.set(10, 5, -55)
 start_arm_wall_left.rotation.y -= Math.PI / 2;
 first_phase_meshes.push(start_arm_wall_left);
 
-let start_arm_wall_back = new THREE.Mesh(small_wall_geometry.clone(), wall_material.clone());
+let start_arm_wall_back = new THREE.Mesh(small_wall_geometry.clone(), wall_material1.clone());
 start_arm_wall_back.position.set(0, 5, -100);
 first_phase_meshes.push(start_arm_wall_back);
 
 let far_end_wall_geometry = new THREE.PlaneGeometry(200, 10);
-let far_end_wall = new THREE.Mesh(far_end_wall_geometry, wall_material.clone());
+let far_end_wall = new THREE.Mesh(far_end_wall_geometry, wall_material2.clone());
 far_end_wall.position.set(0, 5, 10);
 far_end_wall.rotation.x += Math.PI;
 first_phase_meshes.push(far_end_wall);
 
-let right_arm = new THREE.Mesh(wall_geometry.clone(), wall_material.clone());
+let right_arm = new THREE.Mesh(wall_geometry.clone(), wall_material2.clone());
 right_arm.position.set(55, 5, -10);
 first_phase_meshes.push(right_arm);
 
-let right_arm_end = new THREE.Mesh(small_wall_geometry.clone(), wall_material.clone());
+let right_arm_end = new THREE.Mesh(small_wall_geometry.clone(), wall_material1.clone());
 right_arm_end.position.set(-100, 5, 0);
 right_arm_end.rotation.y += Math.PI / 2;
 first_phase_meshes.push(right_arm_end);
 
-let left_arm = new THREE.Mesh(wall_geometry.clone(), wall_material.clone());
+let left_arm = new THREE.Mesh(wall_geometry.clone(), wall_material1.clone());
 left_arm.position.set(-55, 5, -10);
 first_phase_meshes.push(left_arm);
 
-let left_arm_end = new THREE.Mesh(small_wall_geometry.clone(), wall_material.clone());
+let left_arm_end = new THREE.Mesh(small_wall_geometry.clone(), wall_material1.clone());
 left_arm_end.position.set(100, 5, 0);
 left_arm_end.rotation.y -= Math.PI / 2;
 first_phase_meshes.push(left_arm_end);
@@ -379,7 +416,7 @@ last_phase_meshes.push(asphalt_mesh_center);
 const hemiLight = new THREE.HemisphereLight( 0xffffff, 0xffffff, 2 );
 hemiLight.color.setHSL( 0.1, 1, 0.6 );
 hemiLight.groundColor.setHSL( 0.095, 1, 0.75 );
-hemiLight.position.set( 0, 50, 0 );
+hemiLight.position.set( -1, 50, 1 );
 scene.add( hemiLight );
 
 const dirLight = new THREE.DirectionalLight( 0xffffff, 3 );
@@ -404,7 +441,7 @@ dirLight.shadow.camera.far = 3500;
 dirLight.shadow.bias = - 0.0001;
 
 
-function initiate_phase3() {
+function initiate_test_environment() {
     // After the participants read everything the overlay will disappear and a new setting will be created
     first_phase_meshes.forEach((mesh) => {scene.remove(mesh)});
     last_phase_meshes.forEach((mesh) => {scene.add(mesh)});
@@ -425,10 +462,8 @@ function switch_group() {
     traffic_meshes.forEach((mesh) => {scene.remove(mesh)});
     first_phase_meshes.forEach((mesh) => {scene.add(mesh)});
     scene.background = new THREE.Color(0x000000);
-    color_pairs_map = COLOR_PAIRS_G2;
     group = 1;
     switched_group = 1;
-    stimulus_index = 0;
     successes = _SUCCESSES_G1;
     success_goal = _SUCCESSES_G2;
     phase = 0;
@@ -512,42 +547,22 @@ function control() {
 function rotate_disc () { color_disc.rotation.x += Math.PI };
 
 function reveal_disc(triangle, color1) {
-    return function () {
-        color_disc.geometry = triangle ? triangle_geom : circle_geom;
-        color_disc.updateMatrix();
-        color_disc.material.color.set(color1);
+    color_disc.geometry = triangle ? triangle_geom : circle_geom;
+    color_disc.updateMatrix();
+    color_disc.material.color.set(color1);
+    clock.start();
+    rotate_disc();
+    setTimeout(() => {
         rotate_disc();
-        setTimeout(() => {
-            rotate_disc();
-        }, 1300);
-    };
-};
-
-const COLOR_PAIRS_G1 = [
-    [reveal_disc(false, COLOR_DISCS.blue), -1],
-    [reveal_disc(false, COLOR_DISCS.pink), 1],
-    [reveal_disc(false, COLOR_DISCS.yellow), -1]
-];
-const COLOR_PAIRS_G2 = [
-    [reveal_disc(false, COLOR_DISCS.blue), -1],
-    [reveal_disc(false, COLOR_DISCS.pink), 1],
-    [reveal_disc(false, COLOR_DISCS.yellow), -1],
-    [reveal_disc(true, COLOR_DISCS.blue), 1],
-    [reveal_disc(true, COLOR_DISCS.pink), -1]
-];
-let color_pairs_map;
-if (group == 0) {
-    color_pairs_map = COLOR_PAIRS_G1;
-} else {
-    color_pairs_map = COLOR_PAIRS_G2;
+    }, 1300);
 };
 
 function show_color_disc() {
     camera.lookAt(0, 5, 9.9);
     if (phase == 0 || phase == 1) {
-        color_pairs_map[stimulus_index][0]();
+        reveal_disc(stimulus_pair[0], stimulus_pair[1]);
     } else if (switched_group && phase == 2) {
-        reveal_disc(true, COLOR_DISCS.yellow)();
+        reveal_disc(true, COLOR_DISCS.yellow);
     };
 };
 
@@ -558,12 +573,11 @@ function show_traffic_light() {
     if (group == 0) { color = COLOR_DISCS.blue } else { color = COLOR_DISCS.yellow };
 
     setTimeout(() => {
+        clock.start();
         setTimeout(() => { traffic_blinking(color) }, 0);
         traffic_light2.material = new THREE.MeshBasicMaterial({color: color});
         traffic_light2.updateMatrix();
         // Measure the time of inference
-        clock.start();
-        measuring_time = true;
     }, 300);
 };
 
@@ -603,11 +617,9 @@ function state_flow() {
         } else {
             if (switched_group) {
                 show_color_disc();
-                clock.start();
-                measuring_time = true;
             } else {
                 show_traffic_light();
-            }
+            };
         };
     };
 };
@@ -622,9 +634,9 @@ function await_user_direction() {
         state = 2;
         right_arm_choice_wall.rotation.y += Math.PI;
     };
-    if ((controls[37] || controls[39]) && measuring_time) {
+    if ((controls[37] || controls[39]) && clock.running) {
         clock.stop();
-        measuring_time = false;
+        choice_correct = chosen_direction == stimulus_pair[2];
     };
 };
 
@@ -635,22 +647,25 @@ function await_finish() {
         // If the user is in the the last, test, phase
         if (phase == 2) {
             if (group == 0) {
-                inference_made2 = chosen_direction == -1;
-                inference_time2 = clock.elapsedTime.toFixed(7);
+                inference_made1 = chosen_direction == -1;
+                inference_time1 = clock.elapsedTime.toFixed(7);
                 mistakes1 = mistakes;
                 mistakes = 0;
                 switch_group();
+                show_score();
             } else {
                 mistakes2 = mistakes;
-                inference_made1 = chosen_direction == 1;
-                inference_time1 = clock.elapsedTime.toFixed(7);
-                document.getElementById('inftime').innerText = inference_time1;
-                document.getElementById('inf').innerText = (inference_made1) ? 'Yes' : 'No';
+                inference_made2 = chosen_direction == 1;
+                inference_time2 = clock.elapsedTime.toFixed(7);
+                document.getElementById('inftime').innerText = inference_time2;
+                document.getElementById('inf').innerText = (inference_made2) ? 'Yes' : 'No';
                 phase = -1;
                 setTimeout(ending_overlay_on, 0);
             };
         } else {
             // Put the user at the start arm
+            let results = [stimulus_pair[0], stimulus_pair[1], choice_correct, Number(clock.elapsedTime.toFixed(4))];
+            (!exposed ? timesg1 : timesg2).push(results);
             restart_training();
         };
     };
@@ -659,44 +674,57 @@ function await_finish() {
 function restart_training() {
     // Put the user at the start arm
     // Close the choice arm walls
-    if (chosen_direction == -1) {
-        left_arm_choice_wall.rotation.y += Math.PI;
-    } else {
+    if (chosen_direction == 1) {
         right_arm_choice_wall.rotation.y += Math.PI;
+    } else {
+        left_arm_choice_wall.rotation.y += Math.PI;
     };
     // Evaluate and update the training colors and success
     if (group == 0) {
-        if (color_pairs_map[stimulus_index][1] == chosen_direction) {
+        if (choice_correct) {
             successes += 1;
-            stimulus_index = Math.floor(Math.random() * color_pairs_map.length);
+            stimulus_pair = color_list_g1p1.splice(Math.floor(Math.random() * color_list_g1p1.length), 1)[0];
         } else {
             successes = 0;
+            color_list_g1p1 = Array.from(COLOR_LIST_G1P1);
             mistakes += 1;
         };
     } else if (group == 1) {
-        if (color_pairs_map[stimulus_index][1] == chosen_direction) {
+        if (choice_correct) {
             successes += 1;
-            if (!exposed && !switched_group && (successes <= success_goal/2)) {
-                stimulus_index += 1;
-                stimulus_index = stimulus_index % (color_pairs_map.length - 2);
+            if (!switched_group && !exposed && successes == success_goal / 2) {
+                // If they never switched group weren't exposed but reached half of the success goal make them exposed
+                exposed = true;
+                mistakes1 = mistakes;
+                mistakes = 0;
+            };
+            if (!exposed) {
+                // If they weren't exposed use circles
+                stimulus_pair = color_list_g1p1.splice(Math.floor(Math.random() * color_list_g1p1.length), 1)[0];
             } else {
-                if (!exposed) {
-                    mistakes1 = mistakes;
-                    mistakes = 0;
-                    exposed = true;
-                };
-                stimulus_index = Math.floor(
-                    Math.random() * color_pairs_map.length
-                );
+                // If they were exposed use triangles and circles
+                // The switched group are exposed by definition
+                stimulus_pair = color_list_g1p2.splice(Math.floor(Math.random() * color_list_g1p2.length), 1)[0];
             };
         } else {
-            successes = 0;
+            if (!exposed) {
+                successes = 0;
+                color_list_g1p1 = Array.from(COLOR_LIST_G1P1);
+            } else {
+                successes = success_goal / 2;
+                color_list_g1p2 = Array.from(COLOR_LIST_G1P2);
+            };
             mistakes += 1;
         };
     };
     if (successes == success_goal) {
         phase = 2;
         successes = 0;
+        if (group == 0) {
+            choice_time1 = clock.elapsedTime.toFixed(7);
+        } else {
+            choice_time2 = clock.elapsedTime.toFixed(7);
+        };
         setTimeout(reading_overlay_on, 0);
     };
     state = 0;
@@ -737,8 +765,9 @@ function reading_overlay_off() {
     pointercontrol.lock();
     overlay_reading.style.display = 'none';
     controls_enabled = true;
+    hide_score();
     if (!switched_group) {
-        setTimeout(initiate_phase3, 0);
+        setTimeout(initiate_test_environment, 0);
     };
 };
 
@@ -748,6 +777,13 @@ function ending_overlay_on() {
     pointercontrol.disconnect();
     controls_enabled = false;
     setTimeout(send_data, 0);
+};
+
+function show_score() {
+    document.getElementById('score').style.display = 'block';
+};
+function hide_score() {
+    document.getElementById('score').style.display = 'none';
 };
 // --- Overlay functions END ---
 
@@ -788,14 +824,19 @@ async function send_data() {
             data: {
                 age: Number(age),
                 sex: Number(sex),
+                cb: Number(colorbl),
+                choice_time1: Number(choice_time1),
                 inference1: Number(inference_made1),
                 inferencet1: Number(inference_time1),
+                choice_time2: Number(choice_time2),
                 inference2: Number(inference_made2),
                 inferencet2: Number(inference_time2),
-                mistakes1: mistakes1,
-                mistakes2: mistakes2,
-                group: GROUP
-            }
+                mistakes1: Number(mistakes1),
+                mistakes2: Number(mistakes2),
+                group: _group
+            },
+            timesg1: timesg1,
+            timesg2: timesg2
         })
     });
     // const content = await rawResponse.json();
