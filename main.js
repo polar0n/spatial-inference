@@ -25,7 +25,11 @@ let mistakes = 0;
 let mistakes1 = 0;
 let mistakes2 = 0;
 
-var _group = _group = Math.floor(Math.random() * 2);
+var _group = Math.floor(Math.random() * 2);
+var group;
+var success_goal;
+var time;
+
 
 window.onload = () => {
     overlay_start = document.getElementById('agreement');
@@ -61,7 +65,10 @@ window.onload = () => {
     score_text = document.getElementById('score');
     form_id = document.getElementById('form_id').innerText;
     let try_group = document.getElementById('group').innerText;
-    if (!isNaN(try_group)) { _group = Number(try_group) };
+    if (try_group != '{{ group }}') { _group = Number(try_group) };
+    group = _group;
+    success_goal = group ? _SUCCESSES_G2 : _SUCCESSES_G1;
+    time = group ? TIME : TIME / 2;
 };
 
 let end;
@@ -69,17 +76,13 @@ let timer;
 let controls_enabled = false;
 let state = 0;
 let phase = 0; // 0
-// const _group = Math.floor(Math.random() * 2);
-let group = _group;
 const TIME = 600; // 600
-let time = group ? TIME : TIME / 2;
 const COLOR_DISCS = {
     blue: 0x0394fc, 
     pink: 0xf00078, 
     yellow: 0xf0e500
 };
 
-// var item = items[Math.floor(Math.random() * items.length)];
 
 const BASE_COLOR_PAIRS_CIRCLE = [
     [false, COLOR_DISCS.blue, -1],
@@ -108,7 +111,6 @@ let color_list_g1p2 = Array.from(COLOR_LIST_G1P2);
 
 const _SUCCESSES_G2 = 66; // 66
 const _SUCCESSES_G1 = _SUCCESSES_G2 / 2; // 33
-let success_goal = group ? _SUCCESSES_G2 : _SUCCESSES_G1;
 let successes = 0; // 0
 let chosen_direction = 0; // -1 for left, 1 for right, and 0 for undefined
 let choice_correct = 0;
