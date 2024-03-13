@@ -26,7 +26,7 @@ let mistakes1 = 0;
 let mistakes2 = 0;
 
 var _group = Math.floor(Math.random() * 2);
-var group;
+let group;
 var success_goal;
 var time;
 
@@ -65,10 +65,39 @@ window.onload = () => {
     score_text = document.getElementById('score');
     form_id = document.getElementById('form_id').innerText;
     let try_group = document.getElementById('group').innerText;
+    console.log(try_group);
     if (try_group != '{{ group }}') { _group = Number(try_group) };
     group = _group;
     success_goal = group ? _SUCCESSES_G2 : _SUCCESSES_G1;
     time = group ? TIME : TIME / 2;
+
+    if (group == 0) {
+        traffic_light_circle1 = new THREE.SphereGeometry(1.4, 32, 16);
+        traffic_light_circle2 = new THREE.SphereGeometry(1.4, 32, 16);
+    } else {
+        traffic_light_circle1 = new THREE.CylinderGeometry(1.4, 1.4, 2, 3, 1, false, -Math.PI/2);
+        traffic_light_circle2 = new THREE.CylinderGeometry(1.4, 1.4, 2, 3, 1, false, -Math.PI/2);
+    };
+
+    traffic_light_material1 = new THREE.MeshPhongMaterial({color: LIGHTS.magenta});
+    traffic_light1 = new THREE.Mesh(traffic_light_circle1, traffic_light_material1);
+    traffic_light1.position.y = POLE_HEIGHT + 0.8;
+    traffic_light1.position.z = 10 - 3/2 + 0.5;
+    if (group != 0) {
+        traffic_light1.rotateY(-Math.PI/2);
+        traffic_light1.rotateZ(-Math.PI/2);
+    };
+    traffic_meshes.push(traffic_light1);
+
+    traffic_light_material2 = new THREE.MeshPhongMaterial({color: LIGHTS.yellow});
+    traffic_light2 = new THREE.Mesh(traffic_light_circle2, traffic_light_material2);
+    traffic_light2.position.y = POLE_HEIGHT + 3.6;
+    traffic_light2.position.z = 10 - 3/2 + 0.5;
+    if (group != 0) {
+        traffic_light2.rotateY(-Math.PI/2);
+        traffic_light2.rotateZ(-Math.PI/2);
+    };
+    traffic_meshes.push(traffic_light2);
 };
 
 let end;
@@ -78,7 +107,7 @@ let state = 0;
 let phase = 0; // 0
 const TIME = 600; // 600
 const COLOR_DISCS = {
-    blue: 0x0394fc, 
+    blue: 0x0394fc,
     pink: 0xf00078, 
     yellow: 0xf0e500
 };
@@ -284,37 +313,12 @@ box.receiveShadow = true;
 box.castShadow = true;
 traffic_meshes.push(box);
 
+let traffic_light_material1;
+let traffic_light1;
 let traffic_light_circle1;
-if (group == 0) {
-    traffic_light_circle1 = new THREE.SphereGeometry(1.4, 32, 16);
-} else {
-    traffic_light_circle1 = new THREE.CylinderGeometry(1.4, 1.4, 2, 3, 1, false, -Math.PI/2);
-};
-const traffic_light_material1 = new THREE.MeshPhongMaterial({color: LIGHTS.magenta});
-const traffic_light1 = new THREE.Mesh(traffic_light_circle1, traffic_light_material1);
-traffic_light1.position.y = POLE_HEIGHT + 0.8;
-traffic_light1.position.z = 10 - 3/2 + 0.5;
-if (group != 0) {
-    traffic_light1.rotateY(-Math.PI/2);
-    traffic_light1.rotateZ(-Math.PI/2);
-};
-traffic_meshes.push(traffic_light1);
-
+let traffic_light_material2;
+let traffic_light2;
 let traffic_light_circle2;
-if (group == 0) {
-    traffic_light_circle2 = new THREE.SphereGeometry(1.4, 32, 16);
-} else {
-    traffic_light_circle2 = new THREE.CylinderGeometry(1.4, 1.4, 2, 3, 1, false, -Math.PI/2);
-};
-const traffic_light_material2 = new THREE.MeshPhongMaterial({color: LIGHTS.yellow});
-const traffic_light2 = new THREE.Mesh(traffic_light_circle2, traffic_light_material2);
-traffic_light2.position.y = POLE_HEIGHT + 3.6;
-traffic_light2.position.z = 10 - 3/2 + 0.5;
-if (group != 0) {
-    traffic_light2.rotateY(-Math.PI/2);
-    traffic_light2.rotateZ(-Math.PI/2);
-};
-traffic_meshes.push(traffic_light2);
 
 const grass_material = new THREE.MeshStandardMaterial({
     roughness: 1,
