@@ -25,7 +25,8 @@ let mistakes = 0;
 let mistakes1 = 0;
 let mistakes2 = 0;
 
-var _group = Math.floor(Math.random() * 2);
+// var _group = Math.floor(Math.random() * 2);
+var _group = 1;
 let group;
 var success_goal;
 var time;
@@ -65,9 +66,9 @@ window.onload = () => {
     score_text = document.getElementById('score');
     form_id = document.getElementById('form_id').innerText;
     let try_group = document.getElementById('group').innerText;
-    console.log(try_group);
-    if (try_group != '{{ group }}') { _group = Number(try_group) };
-    group = _group;
+    // if (try_group != '{{ group }}') { _group = Number(try_group) };
+    // group = _group;
+    group = 1;
     success_goal = group ? _SUCCESSES_G2 : _SUCCESSES_G1;
     time = group ? TIME : TIME / 2;
 
